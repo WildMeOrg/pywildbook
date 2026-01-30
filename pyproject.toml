@@ -1,0 +1,16 @@
+[project]
+name = "wildbook-python-client"
+version = "0.1.0"
+description = "Python client for the Wildbook v3 API"
+readme = "README.md"
+authors = [
+    { name = "vkirkl", email = "georgetownpolecat@gmail.com" }
+]
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.15,<0.10.0"]
+build-backend = "uv_build"

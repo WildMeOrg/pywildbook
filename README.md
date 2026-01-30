@@ -1,0 +1,400 @@
+# Wildbook Python Client
+
+A Python client library for interacting with the Wildbook v3 API. This package provides a simple, intuitive interface for authenticating with Wildbook instances and searching for wildlife encounters, individuals, and other data.
+
+## Features
+
+- 🔐 Session-based authentication with automatic cookie management
+- 🔍 Powerful search capabilities using OpenSearch/Elasticsearch queries
+- 🛠️ Helper functions for common query patterns
+- 📝 Full type hints for better IDE support
+- 🎯 Simple, intuitive API design
+- ⚡ Built with `requests` for reliable HTTP handling
+- 🐍 Python 3.9+ support
+
+## Installation
+
+### Using uv (recommended)
+
+```bash
+cd wildbook-python-client
+uv sync
+```
+
+### Using pip
+
+```bash
+pip install -e .
+```
+
+## Quick Start
+
+```python
+from wildbook_python_client import WildbookClient
+from wildbook_python_client.queries import match_all
+
+# Create a client instance
+client = WildbookClient('http://localhost:8080')
+
+# Login
+client.login('user@example.com', 'password')
+
+# Search for encounters
+results = client.search_encounters(match_all(), size=10)
+
+# Print results
+for encounter in results['hits']:
+    print(f"{encounter['id']}: {encounter['genus']} {encounter.get('specificEpithet', '')}")
+
+# Logout when done
+client.logout()
+```
+
+## Authentication
+
+The client uses session-based authentication. After logging in, the session cookie is automatically managed for all subsequent requests.
+
+```python
+from wildbook_python_client import WildbookClient
+
+client = WildbookClient('http://localhost:8080')
+
+# Login
+user_info = client.login('user@example.com', 'password')
+print(f"Logged in as: {user_info['username']}")
+
+# Check authentication status
+if client.is_authenticated():
+    print("✓ Authenticated")
+
+# Get current user info
+user = client.get_current_user()
+print(f"User ID: {user['id']}")
+
+# Logout
+client.logout()
+```
+
+### Using Context Manager (Recommended)
+
+The client can be used as a context manager to ensure automatic logout:
+
+```python
+with WildbookClient('http://localhost:8080') as client:
+    client.login('user@example.com', 'password')
+    results = client.search_encounters(match_all())
+    # ... do work ...
+    # logout() is called automatically when exiting the context
+```
+
+## Searching Encounters
+
+### Basic Search
+
+```python
+from wildbook_python_client.queries import match_all
+
+# Get all encounters
+results = client.search_encounters(match_all(), size=50)
+
+# With pagination
+results = client.search_encounters(
+    match_all(),
+    from_=0,      # offset
+    size=20,      # page size
+    sort='year',  # sort field
+    sort_order='desc'
+)
+```
+
+### Filtering by Species
+
+```python
+from wildbook_python_client.queries import filter_by_species
+
+# Search for humpback whales
+query = filter_by_species('Megaptera', 'novaeangliae')
+results = client.search_encounters(query)
+
+# Search by genus only
+query = filter_by_species('Megaptera')
+results = client.search_encounters(query)
+```
+
+### Filtering by Date Range
+
+```python
+from wildbook_python_client.queries import filter_by_year_range
+
+# Encounters from 2020 to 2023
+query = filter_by_year_range(start_year=2020, end_year=2023)
+results = client.search_encounters(query)
+
+# Encounters from 2020 onwards
+query = filter_by_year_range(start_year=2020)
+results = client.search_encounters(query)
+```
+
+### Filtering by Location
+
+```python
+from wildbook_python_client.queries import filter_by_location
+
+# Filter by country
+query = filter_by_location(country='Kenya')
+results = client.search_encounters(query)
+
+# Filter by bounding box
+query = filter_by_location(
+    min_lat=-5.0,
+    max_lat=5.0,
+    min_lon=35.0,
+    max_lon=42.0
+)
+results = client.search_encounters(query)
+```
+
+### Combining Multiple Filters
+
+```python
+from wildbook_python_client.queries import (
+    filter_by_species,
+    filter_by_sex,
+    filter_by_year_range,
+    combine_queries
+)
+
+# Female humpback whales from 2020-2023
+species = filter_by_species('Megaptera', 'novaeangliae')
+sex = filter_by_sex('female')
+years = filter_by_year_range(2020, 2023)
+
+query = combine_queries(species, sex, years, operator='must')
+results = client.search_encounters(query)
+```
+
+### Finding Unassigned Encounters
+
+```python
+from wildbook_python_client.queries import missing
+
+# Encounters without an assigned individual
+query = missing('individualId')
+unassigned = client.search_encounters(query)
+```
+
+### Text Search
+
+```python
+from wildbook_python_client.queries import text_search
+
+# Search for "beach" in locality descriptions
+query = text_search('verbatimLocality', 'beach', fuzzy=True)
+results = client.search_encounters(query)
+```
+
+## Searching Individuals
+
+```python
+from wildbook_python_client.queries import exists
+
+# Find individuals with encounters
+query = exists('encounters')
+results = client.search_individuals(query, size=20)
+
+for individual in results['hits']:
+    print(f"{individual['id']}: {individual.get('displayName', 'Unnamed')}")
+```
+
+## Getting Specific Records
+
+```python
+# Get a specific encounter by UUID
+encounter = client.get_encounter('123e4567-e89b-12d3-a456-426614174000')
+print(encounter)
+
+# Get a specific individual by UUID
+individual = client.get_individual('987fcdeb-51a2-43f7-9876-543210fedcba')
+print(individual)
+```
+
+## User Dashboard
+
+```python
+# Get dashboard data for the current user
+dashboard = client.get_user_home()
+
+print(f"Latest encounters: {dashboard['latestEncounters']}")
+print(f"Projects: {dashboard['projects']}")
+print(f"Latest bulk import: {dashboard.get('latestBulkImportTask')}")
+```
+
+## Available Query Helpers
+
+The `wildbook_python_client.queries` module provides these helper functions:
+
+- `match_all()` - Match all documents
+- `filter_by_sex(sex)` - Filter by sex
+- `filter_by_species(genus, specific_epithet=None)` - Filter by species
+- `filter_by_year_range(start_year, end_year)` - Filter by year range
+- `filter_by_location(country, location_id, min_lat, max_lat, min_lon, max_lon)` - Filter by location
+- `filter_by_individual(individual_id)` - Find encounters for an individual
+- `filter_by_submitter(submitter_id)` - Filter by submitter
+- `text_search(field, text, fuzzy=False)` - Text search in a field
+- `exists(field)` - Find documents where field exists
+- `missing(field)` - Find documents where field is missing
+- `combine_queries(*queries, operator='must')` - Combine multiple queries with AND/OR/NOT logic
+
+## Custom Queries
+
+For advanced use cases, you can construct your own OpenSearch/Elasticsearch queries:
+
+```python
+# Custom query using Elasticsearch DSL
+custom_query = {
+    'bool': {
+        'must': [
+            {'term': {'genus': 'Tursiops'}},
+            {'range': {'year': {'gte': 2020, 'lte': 2023}}}
+        ],
+        'must_not': [
+            {'term': {'sex': 'unknown'}}
+        ]
+    }
+}
+
+results = client.search_encounters(custom_query)
+```
+
+## Error Handling
+
+The client provides specific exceptions for different error scenarios:
+
+```python
+from wildbook_python_client import (
+    WildbookClient,
+    AuthenticationError,
+    NotAuthenticatedError,
+    NotFoundError,
+    BadRequestError,
+    ForbiddenError,
+    APIError
+)
+
+client = WildbookClient('http://localhost:8080')
+
+try:
+    client.login('user@example.com', 'wrong_password')
+except AuthenticationError as e:
+    print(f"Login failed: {e}")
+
+try:
+    # Trying to search without logging in
+    results = client.search_encounters(match_all())
+except NotAuthenticatedError as e:
+    print(f"Not authenticated: {e}")
+
+try:
+    encounter = client.get_encounter('invalid-uuid')
+except NotFoundError as e:
+    print(f"Encounter not found: {e}")
+```
+
+## Examples
+
+See the `examples/` directory for complete examples:
+
+- `basic_usage.py` - Basic login, search, and logout
+- `advanced_search.py` - Complex queries, pagination, and filtering
+
+Run examples:
+
+```bash
+# Set environment variables
+export WILDBOOK_URL="http://localhost:8080"
+export WILDBOOK_USERNAME="your@email.com"
+export WILDBOOK_PASSWORD="yourpassword"
+
+# Run basic example
+uv run python examples/basic_usage.py
+
+# Run advanced example
+uv run python examples/advanced_search.py
+```
+
+## Development
+
+### Setting up the development environment
+
+```bash
+# Clone the repository
+git clone <repo-url>
+cd wildbook-python-client
+
+# Initialize with uv
+uv sync
+
+# Run tests (when available)
+uv run pytest
+```
+
+### Project Structure
+
+```
+wildbook-python-client/
+├── src/
+│   └── wildbook_python_client/
+│       ├── __init__.py          # Package exports
+│       ├── client.py            # Main client class
+│       ├── exceptions.py        # Custom exceptions
+│       └── queries.py           # Query helper functions
+├── examples/
+│   ├── basic_usage.py
+│   └── advanced_search.py
+├── pyproject.toml               # Package configuration
+└── README.md
+```
+
+## API Reference
+
+### WildbookClient
+
+Main client class for interacting with Wildbook.
+
+#### Methods
+
+- `__init__(base_url: str)` - Create a new client instance
+- `login(username: str, password: str) -> Dict` - Authenticate user
+- `logout() -> bool` - End session
+- `is_authenticated() -> bool` - Check authentication status
+- `get_current_user() -> Dict` - Get current user info
+- `get_user_home() -> Dict` - Get user dashboard data
+- `search_encounters(query, from_=0, size=10, sort=None, sort_order=None) -> Dict` - Search encounters
+- `get_encounter(encounter_id: str) -> Dict` - Get specific encounter
+- `search_individuals(query, from_=0, size=10, sort=None, sort_order=None) -> Dict` - Search individuals
+- `get_individual(individual_id: str) -> Dict` - Get specific individual
+
+## Requirements
+
+- Python >= 3.9
+- requests >= 2.31.0
+
+## License
+
+[Add your license here]
+
+## Contributing
+
+[Add contribution guidelines here]
+
+## Support
+
+For issues and questions:
+- GitHub Issues: [Add URL]
+- Documentation: [Add URL]
+- Wildbook Documentation: https://docs.wildme.org/
+
+## Related Projects
+
+- [Wildbook](https://github.com/WildMeOrg/Wildbook) - The main Wildbook platform
+- [Codex](https://github.com/WildMeOrg/codex) - Next-generation Wildbook
