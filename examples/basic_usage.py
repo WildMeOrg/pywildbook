@@ -14,17 +14,16 @@ from wildbook_python_client.queries import match_all
 
 def main():
     # Configuration - use environment variables or replace with your values
-    base_url = os.getenv('WILDBOOK_URL', 'http://localhost:8080')
-    username = os.getenv('WILDBOOK_USERNAME', 'user@example.com')
-    password = os.getenv('WILDBOOK_PASSWORD', 'password')
+    # These will be automatically picked up by the client if not explicitly provided
+    # WILDBOOK_URL, WILDBOOK_USERNAME, WILDBOOK_PASSWORD
 
     # Create client instance
-    client = WildbookClient(base_url)
+    client = WildbookClient(os.getenv('WILDBOOK_URL', 'http://localhost:8080'))
 
     try:
         # Login
-        print(f"Logging in as {username}...")
-        user_info = client.login(username, password)
+        print(f"Attempting to log in...")
+        user_info = client.login() # Credentials now handled by client from env vars or explicitly passed
         print(f"✓ Logged in successfully as {user_info.get('username')}")
         print(f"  User ID: {user_info.get('id')}")
         print(f"  Full Name: {user_info.get('fullName')}")

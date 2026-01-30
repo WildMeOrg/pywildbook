@@ -24,17 +24,15 @@ from wildbook_python_client.queries import (
 
 
 def main():
-    # Configuration
-    base_url = os.getenv('WILDBOOK_URL', 'http://localhost:8080')
-    username = os.getenv('WILDBOOK_USERNAME', 'user@example.com')
-    password = os.getenv('WILDBOOK_PASSWORD', 'password')
+    # Configuration - these will be automatically picked up by the client if not explicitly provided
+    # WILDBOOK_URL, WILDBOOK_USERNAME, WILDBOOK_PASSWORD
 
     # Create client and login
-    client = WildbookClient(base_url)
+    client = WildbookClient(os.getenv('WILDBOOK_URL', 'http://localhost:8080'))
 
     try:
-        print("Logging in...")
-        client.login(username, password)
+        print("Attempting to log in...")
+        client.login() # Credentials now handled by client from env vars or explicitly passed
         print("✓ Logged in\n")
 
         # Example 1: Search by sex and year range

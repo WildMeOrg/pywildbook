@@ -32,12 +32,15 @@ pip install -e .
 ```python
 from wildbook_python_client import WildbookClient
 from wildbook_python_client.queries import match_all
+import os
 
 # Create a client instance
-client = WildbookClient('http://localhost:8080')
+# The base URL can also be set via the WILDBOOK_URL environment variable.
+client = WildbookClient(os.environ.get('WILDBOOK_URL', 'http://localhost:8080'))
 
 # Login
-client.login('user@example.com', 'password')
+# Credentials can be passed directly or sourced from WILDBOOK_USERNAME and WILDBOOK_PASSWORD environment variables.
+client.login() 
 
 # Search for encounters
 results = client.search_encounters(match_all(), size=10)
@@ -52,15 +55,18 @@ client.logout()
 
 ## Authentication
 
-The client uses session-based authentication. After logging in, the session cookie is automatically managed for all subsequent requests.
+The client uses session-based authentication. After logging in, the session cookie is automatically managed for all subsequent requests. For security, it is highly recommended to use environment variables for sensitive credentials.
 
 ```python
 from wildbook_python_client import WildbookClient
+import os
 
-client = WildbookClient('http://localhost:8080')
+# The base URL can also be set via the WILDBOOK_URL environment variable.
+client = WildbookClient(os.environ.get('WILDBOOK_URL', 'http://localhost:8080'))
 
 # Login
-user_info = client.login('user@example.com', 'password')
+# Credentials can be passed directly or sourced from WILDBOOK_USERNAME and WILDBOOK_PASSWORD environment variables.
+user_info = client.login() 
 print(f"Logged in as: {user_info['username']}")
 
 # Check authentication status
@@ -80,8 +86,14 @@ client.logout()
 The client can be used as a context manager to ensure automatic logout:
 
 ```python
-with WildbookClient('http://localhost:8080') as client:
-    client.login('user@example.com', 'password')
+import os
+from wildbook_python_client import WildbookClient
+from wildbook_python_client.queries import match_all
+
+# The base URL can also be set via the WILDBOOK_URL environment variable.
+with WildbookClient(os.environ.get('WILDBOOK_URL', 'http://localhost:8080')) as client:
+    # Credentials can be passed directly or sourced from WILDBOOK_USERNAME and WILDBOOK_PASSWORD environment variables.
+    client.login()
     results = client.search_encounters(match_all())
     # ... do work ...
     # logout() is called automatically when exiting the context

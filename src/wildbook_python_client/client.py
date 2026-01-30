@@ -3,6 +3,7 @@
 from typing import Optional, Dict, Any, List
 import requests
 from urllib.parse import urljoin
+import os
 
 from .exceptions import (
     AuthenticationError,
@@ -90,23 +91,34 @@ class WildbookClient:
             error_msg = data.get('error', f'HTTP {response.status_code}')
             raise APIError(error_msg, status_code=response.status_code, response_data=data)
 
-    def login(self, username: str, password: str) -> Dict[str, Any]:
+    def login(self, username: Optional[str] = None, password: Optional[str] = None) -> Dict[str, Any]:
         """Authenticate with the Wildbook API.
 
         Args:
-            username: User's username or email
-            password: User's password
+            username: User's username or email. If not provided, attempts to read from WILDBOOK_USERNAME environment variable.
+            password: User's password. If not provided, attempts to read from WILDBOOK_PASSWORD environment variable.
 
         Returns:
             User information dictionary containing id, username, fullName, etc.
 
         Raises:
-            AuthenticationError: If login fails
+            AuthenticationError: If login fails due to incorrect credentials or missing credentials.
 
         Example:
+            >>> # Using explicit arguments
             >>> client.login('user@example.com', 'password123')
+            >>> # Using environment variables (WILDBOOK_USERNAME, WILDBOOK_PASSWORD set)
+            >>> client.login()
             {'success': True, 'id': '...', 'username': 'user@example.com', ...}
         """
+        username = username or os.environ.get('WILDBOOK_USERNAME')
+        password = password or os.environ.get('WILDBOOK_PASSWORD')
+
+        if not username:
+            raise AuthenticationError("Username not provided and WILDBOOK_USERNAME environment variable not set.")
+        if not password:
+            raise AuthenticationError("Password not provided and WILDBOOK_PASSWORD environment variable not set.")
+
         url = self._make_url('/api/v3/login')
         payload = {
             'username': username,
@@ -195,6 +207,38 @@ class WildbookClient:
         response = self.session.get(url)
         return self._handle_response(response)
 
+    def _search(
+        self,
+        endpoint_path: str,
+        query: Dict[str, Any],
+        from_: int = 0,
+        size: int = 10,
+        sort: Optional[str] = None,
+        sort_order: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Internal method to handle common search logic."""
+        if not self._authenticated:
+            raise NotAuthenticatedError("Not authenticated. Call login() first.")
+
+        url = self._make_url(endpoint_path)
+        params = {
+            'from': from_,
+            'size': size
+        }
+        if sort:
+            params['sort'] = sort
+        if sort_order:
+            params['sortOrder'] = sort_order
+
+        # Wrap query in "query" key if not already wrapped
+        if 'query' not in query:
+            search_body = {'query': query}
+        else:
+            search_body = query
+
+        response = self.session.post(url, json=search_body, params=params)
+        return self._handle_response(response)
+
     def search_encounters(
         self,
         query: Dict[str, Any],
@@ -234,27 +278,14 @@ class WildbookClient:
             ... }
             >>> results = client.search_encounters(query, size=50)
         """
-        if not self._authenticated:
-            raise NotAuthenticatedError("Not authenticated. Call login() first.")
-
-        url = self._make_url('/api/v3/search/encounter')
-        params = {
-            'from': from_,
-            'size': size
-        }
-        if sort:
-            params['sort'] = sort
-        if sort_order:
-            params['sortOrder'] = sort_order
-
-        # Wrap query in "query" key if not already wrapped
-        if 'query' not in query:
-            search_body = {'query': query}
-        else:
-            search_body = query
-
-        response = self.session.post(url, json=search_body, params=params)
-        return self._handle_response(response)
+        return self._search(
+            '/api/v3/search/encounter',
+            query,
+            from_,
+            size,
+            sort,
+            sort_order
+        )
 
     def get_encounter(self, encounter_id: str) -> Dict[str, Any]:
         """Get details of a specific encounter by UUID.
@@ -302,27 +333,14 @@ class WildbookClient:
         Raises:
             NotAuthenticatedError: If not logged in
         """
-        if not self._authenticated:
-            raise NotAuthenticatedError("Not authenticated. Call login() first.")
-
-        url = self._make_url('/api/v3/search/individual')
-        params = {
-            'from': from_,
-            'size': size
-        }
-        if sort:
-            params['sort'] = sort
-        if sort_order:
-            params['sortOrder'] = sort_order
-
-        # Wrap query in "query" key if not already wrapped
-        if 'query' not in query:
-            search_body = {'query': query}
-        else:
-            search_body = query
-
-        response = self.session.post(url, json=search_body, params=params)
-        return self._handle_response(response)
+        return self._search(
+            '/api/v3/search/individual',
+            query,
+            from_,
+            size,
+            sort,
+            sort_order
+        )
 
     def get_individual(self, individual_id: str) -> Dict[str, Any]:
         """Get details of a specific individual by UUID.
