@@ -5,6 +5,16 @@ import requests
 from urllib.parse import urljoin
 import os
 
+# API Endpoint Constants
+API_LOGIN = '/api/v3/login'
+API_LOGOUT = '/api/v3/logout'
+API_USER = '/api/v3/user'
+API_HOME = '/api/v3/home'
+API_SEARCH_ENCOUNTER = '/api/v3/search/encounter'
+API_ENCOUNTERS_BASE = '/api/v3/encounters/'
+API_SEARCH_INDIVIDUAL = '/api/v3/search/individual'
+API_INDIVIDUALS_BASE = '/api/v3/individuals/'
+
 from .exceptions import (
     AuthenticationError,
     NotAuthenticatedError,
@@ -119,7 +129,7 @@ class WildbookClient:
         if not password:
             raise AuthenticationError("Password not provided and WILDBOOK_PASSWORD environment variable not set.")
 
-        url = self._make_url('/api/v3/login')
+        url = self._make_url(API_LOGIN)
         payload = {
             'username': username,
             'password': password
@@ -145,7 +155,7 @@ class WildbookClient:
             >>> client.logout()
             True
         """
-        url = self._make_url('/api/v3/logout')
+        url = self._make_url(API_LOGOUT)
 
         try:
             response = self.session.post(url)
@@ -183,7 +193,7 @@ class WildbookClient:
         if not self._authenticated:
             raise NotAuthenticatedError("Not authenticated. Call login() first.")
 
-        url = self._make_url('/api/v3/user')
+        url = self._make_url(API_USER)
         response = self.session.get(url)
         return self._handle_response(response)
 
@@ -203,7 +213,7 @@ class WildbookClient:
         if not self._authenticated:
             raise NotAuthenticatedError("Not authenticated. Call login() first.")
 
-        url = self._make_url('/api/v3/home')
+        url = self._make_url(API_HOME)
         response = self.session.get(url)
         return self._handle_response(response)
 
@@ -279,7 +289,7 @@ class WildbookClient:
             >>> results = client.search_encounters(query, size=50)
         """
         return self._search(
-            '/api/v3/search/encounter',
+            API_SEARCH_ENCOUNTER,
             query,
             from_,
             size,
@@ -306,7 +316,7 @@ class WildbookClient:
         if not self._authenticated:
             raise NotAuthenticatedError("Not authenticated. Call login() first.")
 
-        url = self._make_url(f'/api/v3/encounters/{encounter_id}')
+        url = self._make_url(f'{API_ENCOUNTERS_BASE}{encounter_id}')
         response = self.session.get(url)
         return self._handle_response(response)
 
@@ -334,7 +344,7 @@ class WildbookClient:
             NotAuthenticatedError: If not logged in
         """
         return self._search(
-            '/api/v3/search/individual',
+            API_SEARCH_INDIVIDUAL,
             query,
             from_,
             size,
@@ -358,7 +368,7 @@ class WildbookClient:
         if not self._authenticated:
             raise NotAuthenticatedError("Not authenticated. Call login() first.")
 
-        url = self._make_url(f'/api/v3/individuals/{individual_id}')
+        url = self._make_url(f'{API_INDIVIDUALS_BASE}{individual_id}')
         response = self.session.get(url)
         return self._handle_response(response)
 
