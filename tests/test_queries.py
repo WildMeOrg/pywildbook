@@ -212,11 +212,25 @@ class TestCombineQueries:
 
     def test_combine_queries_must_not(self):
         """Test combine with must_not operator (NOT)."""
+        # Must_not with multiple queries to exclude both
         sex_query = filter_by_sex('unknown')
-        query = combine_queries(sex_query, operator='must_not')
+        year_query = filter_by_year_range(end_year=2000)
+        query = combine_queries(sex_query, year_query, operator='must_not')
 
         assert 'bool' in query
         assert 'must_not' in query['bool']
+        assert len(query['bool']['must_not']) == 2
+
+    def test_combine_queries_single_returns_unchanged(self):
+        """Test that single query is returned unchanged regardless of operator."""
+        sex_query = filter_by_sex('female')
+
+        # Single query should return unchanged, operator is ignored
+        query = combine_queries(sex_query, operator='must')
+        assert query == sex_query
+
+        query = combine_queries(sex_query, operator='should')
+        assert query == sex_query
 
 
 if __name__ == '__main__':
