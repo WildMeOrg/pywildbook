@@ -114,7 +114,7 @@ results = client.search_encounters(
     match_all(),
     from_=0,      # offset
     size=20,      # page size
-    sort='year',  # sort field
+    sort='date',  # sort field
     sort_order='desc'
 )
 ```
@@ -128,7 +128,7 @@ from pywildbook.queries import filter_by_species, combine_queries
 my_encounters = client.search_encounters(
     client.filter_current_user(),
     size=10,
-    sort='year',
+    sort='date',
     sort_order='desc'
 )
 
@@ -341,6 +341,7 @@ See the `examples/` directory for complete examples:
 
 - `basic_usage.py` - Basic login, search, and logout
 - `advanced_search.py` - Complex queries, pagination, and filtering
+- `encounter_map.ipynb` - Plot encounter locations on an interactive map (requires `ipyleaflet`)
 
 Run examples:
 
@@ -355,6 +356,10 @@ uv run python examples/basic_usage.py
 
 # Run advanced example
 uv run python examples/advanced_search.py
+
+# Open the map notebook (install ipyleaflet first)
+uv pip install ipyleaflet
+jupyter notebook examples/encounter_map.ipynb
 ```
 
 ## Development
