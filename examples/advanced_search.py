@@ -8,8 +8,8 @@ This example demonstrates:
 """
 
 import os
-from wildbook_python_client import WildbookClient
-from wildbook_python_client.queries import (
+from pywildbook import WildbookClient
+from pywildbook.queries import (
     match_all,
     filter_by_sex,
     filter_by_species,

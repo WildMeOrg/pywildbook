@@ -1,11 +1,12 @@
 """Unit tests for query helper functions."""
 
 import pytest
-from wildbook_python_client.queries import (
+from pywildbook.queries import (
     match_all,
     filter_by_sex,
     filter_by_species,
     filter_by_year_range,
+    filter_by_date_range,
     filter_by_location,
     filter_by_individual,
     filter_by_submitter,
@@ -45,19 +46,50 @@ class TestBasicQueries:
 class TestSpeciesQueries:
     """Test species filtering queries."""
 
-    def test_filter_by_species_genus_only(self):
-        """Test species filter with genus only."""
-        query = filter_by_species('Megaptera')
-        assert query == {'term': {'genus': 'Megaptera'}}
-
-    def test_filter_by_species_with_epithet(self):
-        """Test species filter with genus and specific epithet."""
-        query = filter_by_species('Megaptera', 'novaeangliae')
+    def test_filter_by_species_species_only(self):
+        """Test species filter with species only searches taxonomy and specificEpithet."""
+        query = filter_by_species('novaeangliae')
         assert 'bool' in query
-        assert 'must' in query['bool']
-        assert len(query['bool']['must']) == 2
-        assert {'term': {'genus': 'Megaptera'}} in query['bool']['must']
-        assert {'term': {'specificEpithet': 'novaeangliae'}} in query['bool']['must']
+        assert 'should' in query['bool']
+        assert query['bool']['minimum_should_match'] == 1
+        assert len(query['bool']['should']) == 2
+
+        # Should contain a wildcard on taxonomy ending with the species
+        has_taxonomy = any(
+            item.get('wildcard', {}).get('taxonomy', {}).get('value') == '* novaeangliae'
+            for item in query['bool']['should']
+        )
+        assert has_taxonomy
+
+        # Should contain a term on specificEpithet
+        assert {'term': {'specificEpithet': 'novaeangliae'}} in query['bool']['should']
+
+    def test_filter_by_species_splits_combined_string(self):
+        """Test that a single combined string is split into genus and species."""
+        single_arg = filter_by_species('Equus grevyi')
+        two_args = filter_by_species('grevyi', genus='Equus')
+        assert single_arg == two_args
+
+    def test_filter_by_species_with_genus(self):
+        """Test species filter with genus and species searches taxonomy and separate fields."""
+        query = filter_by_species('novaeangliae', genus='Megaptera')
+        assert 'bool' in query
+        assert 'should' in query['bool']
+        assert query['bool']['minimum_should_match'] == 1
+        assert len(query['bool']['should']) == 2
+
+        # Should contain a terms query on taxonomy
+        assert {'terms': {'taxonomy': ['Megaptera novaeangliae']}} in query['bool']['should']
+
+        # Should contain a bool/must with genus and specificEpithet
+        has_separate = any(
+            item.get('bool', {}).get('must') is not None
+            and len(item['bool']['must']) == 2
+            and {'term': {'genus': 'Megaptera'}} in item['bool']['must']
+            and {'term': {'specificEpithet': 'novaeangliae'}} in item['bool']['must']
+            for item in query['bool']['should']
+        )
+        assert has_separate
 
 
 class TestYearRangeQueries:
@@ -98,6 +130,50 @@ class TestYearRangeQueries:
         }
 
 
+class TestDateRangeQueries:
+    """Test date range filtering."""
+
+    def test_filter_by_date_range_both(self):
+        """Test date range with both start and end."""
+        query = filter_by_date_range('2025-11-01', '2025-12-01')
+        assert query == {
+            'range': {
+                'date': {
+                    'gte': '2025-11-01T00:00:00Z',
+                    'lte': '2025-12-01T23:59:59Z'
+                }
+            }
+        }
+
+    def test_filter_by_date_range_start_only(self):
+        """Test date range with start date only."""
+        query = filter_by_date_range(start_date='2025-11-01')
+        assert query == {
+            'range': {
+                'date': {
+                    'gte': '2025-11-01T00:00:00Z'
+                }
+            }
+        }
+
+    def test_filter_by_date_range_end_only(self):
+        """Test date range with end date only."""
+        query = filter_by_date_range(end_date='2025-12-01')
+        assert query == {
+            'range': {
+                'date': {
+                    'lte': '2025-12-01T23:59:59Z'
+                }
+            }
+        }
+
+    def test_filter_by_date_range_accepts_date_objects(self):
+        """Test date range accepts date objects."""
+        from datetime import date
+        query = filter_by_date_range(start_date=date(2025, 11, 1))
+        assert query['range']['date']['gte'] == '2025-11-01T00:00:00Z'
+
+
 class TestLocationQueries:
     """Test location filtering queries."""
 
@@ -120,8 +196,8 @@ class TestLocationQueries:
             max_lon=42.0
         )
         assert 'geo_bounding_box' in query
-        assert query['geo_bounding_box']['location']['top_left'] == {'lat': 5.0, 'lon': 35.0}
-        assert query['geo_bounding_box']['location']['bottom_right'] == {'lat': -5.0, 'lon': 42.0}
+        assert query['geo_bounding_box']['locationGeoPoint']['top_left'] == {'lat': 5.0, 'lon': 35.0}
+        assert query['geo_bounding_box']['locationGeoPoint']['bottom_right'] == {'lat': -5.0, 'lon': 42.0}
 
     def test_filter_by_location_multiple(self):
         """Test location filter with country and bounding box."""

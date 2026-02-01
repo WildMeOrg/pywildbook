@@ -1,6 +1,6 @@
 # Tests
 
-This directory contains unit tests for the wildbook-python-client package.
+This directory contains unit tests for the pywildbook package.
 
 ## Running Tests
 
@@ -24,7 +24,7 @@ uv run pytest
 pytest
 
 # With coverage
-pytest --cov=wildbook_python_client --cov-report=html
+pytest --cov=pywildbook --cov-report=html
 ```
 
 ### Run specific test files
@@ -60,6 +60,6 @@ Tests use pytest and follow these conventions:
 To generate a coverage report:
 
 ```bash
-pytest --cov=wildbook_python_client --cov-report=html
+pytest --cov=pywildbook --cov-report=html
 open htmlcov/index.html
 ```

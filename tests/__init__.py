@@ -1,1 +1,1 @@
-"""Tests for wildbook-python-client."""
+"""Tests for pywildbook."""

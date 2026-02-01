@@ -3,8 +3,8 @@
 import pytest
 import os
 from unittest.mock import Mock, patch, MagicMock
-from wildbook_python_client import WildbookClient
-from wildbook_python_client.exceptions import (
+from pywildbook import WildbookClient
+from pywildbook.exceptions import (
     AuthenticationError,
     NotAuthenticatedError,
     NotFoundError,
@@ -32,11 +32,24 @@ class TestClientInitialization:
         client = WildbookClient('http://localhost:8080')
         assert client.is_authenticated() is False
 
+    @patch.dict(os.environ, {'WILDBOOK_URL': 'http://envhost:9090'})
+    def test_init_from_env_var(self):
+        """Test that base_url is read from WILDBOOK_URL when not provided."""
+        client = WildbookClient()
+        assert client.base_url == 'http://envhost:9090'
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_init_missing_url_raises(self):
+        """Test that ValueError is raised when no URL is available."""
+        with pytest.raises(ValueError) as exc_info:
+            WildbookClient()
+        assert 'WILDBOOK_URL' in str(exc_info.value)
+
 
 class TestLoginMethod:
     """Test login functionality."""
 
-    @patch('wildbook_python_client.client.requests.Session.post')
+    @patch('pywildbook.client.requests.Session.post')
     def test_login_with_explicit_credentials(self, mock_post):
         """Test login with username and password arguments."""
         # Mock successful login response
@@ -60,7 +73,7 @@ class TestLoginMethod:
         'WILDBOOK_USERNAME': 'env_user@example.com',
         'WILDBOOK_PASSWORD': 'env_password'
     })
-    @patch('wildbook_python_client.client.requests.Session.post')
+    @patch('pywildbook.client.requests.Session.post')
     def test_login_with_env_vars(self, mock_post):
         """Test login using environment variables."""
         mock_response = Mock()
@@ -98,7 +111,7 @@ class TestLoginMethod:
             client.login()
         assert 'WILDBOOK_PASSWORD' in str(exc_info.value)
 
-    @patch('wildbook_python_client.client.requests.Session.post')
+    @patch('pywildbook.client.requests.Session.post')
     def test_login_failure(self, mock_post):
         """Test login failure handling."""
         mock_response = Mock()
@@ -118,15 +131,15 @@ class TestLoginMethod:
 class TestSearchMethods:
     """Test search functionality."""
 
-    @patch('wildbook_python_client.client.requests.Session.post')
+    @patch('pywildbook.client.requests.Session.post')
     def test_search_without_authentication(self, mock_post):
         """Test that search raises error when not authenticated."""
         client = WildbookClient('http://localhost:8080')
         with pytest.raises(NotAuthenticatedError):
             client.search_encounters({'match_all': {}})
 
-    @patch('wildbook_python_client.client.requests.Session.get')
-    @patch('wildbook_python_client.client.requests.Session.post')
+    @patch('pywildbook.client.requests.Session.get')
+    @patch('pywildbook.client.requests.Session.post')
     def test_query_wrapping(self, mock_post, mock_get):
         """Test that queries are properly wrapped in 'query' key."""
         # Mock login
@@ -155,7 +168,7 @@ class TestSearchMethods:
         assert 'query' in sent_body
         assert sent_body['query'] == {'match_all': {}}
 
-    @patch('wildbook_python_client.client.requests.Session.post')
+    @patch('pywildbook.client.requests.Session.post')
     def test_query_already_wrapped(self, mock_post):
         """Test that already wrapped queries are not double-wrapped."""
         # Mock login and search
@@ -185,7 +198,7 @@ class TestSearchMethods:
 class TestContextManager:
     """Test context manager functionality."""
 
-    @patch('wildbook_python_client.client.requests.Session.post')
+    @patch('pywildbook.client.requests.Session.post')
     def test_context_manager_logout(self, mock_post):
         """Test that context manager calls logout on exit."""
         login_response = Mock()
@@ -210,7 +223,7 @@ class TestContextManager:
 class TestErrorHandling:
     """Test error handling for different HTTP status codes."""
 
-    @patch('wildbook_python_client.client.requests.Session.post')
+    @patch('pywildbook.client.requests.Session.post')
     def test_404_raises_not_found(self, mock_post):
         """Test that 404 status raises NotFoundError."""
         login_response = Mock()
@@ -223,7 +236,7 @@ class TestErrorHandling:
         client.login('test@example.com', 'password')
 
         # Mock 404 response for get_encounter
-        with patch('wildbook_python_client.client.requests.Session.get') as mock_get:
+        with patch('pywildbook.client.requests.Session.get') as mock_get:
             error_response = Mock()
             error_response.status_code = 404
             error_response.json.return_value = {'error': 'not found'}
@@ -232,7 +245,7 @@ class TestErrorHandling:
             with pytest.raises(NotFoundError):
                 client.get_encounter('invalid-uuid')
 
-    @patch('wildbook_python_client.client.requests.Session.post')
+    @patch('pywildbook.client.requests.Session.post')
     def test_403_raises_forbidden(self, mock_post):
         """Test that 403 status raises ForbiddenError."""
         login_response = Mock()
@@ -251,7 +264,7 @@ class TestErrorHandling:
         with pytest.raises(ForbiddenError):
             client.search_encounters({'match_all': {}})
 
-    @patch('wildbook_python_client.client.requests.Session.post')
+    @patch('pywildbook.client.requests.Session.post')
     def test_400_raises_bad_request(self, mock_post):
         """Test that 400 status raises BadRequestError."""
         login_response = Mock()
@@ -272,6 +285,40 @@ class TestErrorHandling:
         with pytest.raises(BadRequestError) as exc_info:
             client.search_encounters({'invalid': 'query'})
         assert 'Invalid query' in str(exc_info.value)
+
+
+class TestFilterCurrentUser:
+    """Test filter_current_user method."""
+
+    def test_filter_current_user_not_authenticated(self):
+        """Test filter_current_user raises when not authenticated."""
+        client = WildbookClient('http://localhost:8080')
+        with pytest.raises(NotAuthenticatedError):
+            client.filter_current_user()
+
+    @patch('pywildbook.client.requests.Session.post')
+    def test_filter_current_user_returns_correct_query(self, mock_post):
+        """Test filter_current_user builds correct assignedUsername query."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'success': True,
+            'username': 'test@example.com',
+            'id': 'user-123'
+        }
+        mock_post.return_value = mock_response
+
+        client = WildbookClient('http://localhost:8080')
+        client.login('test@example.com', 'password123')
+
+        query = client.filter_current_user()
+        assert query == {
+            'bool': {
+                'filter': [
+                    {'terms': {'assignedUsername': ['test@example.com']}}
+                ]
+            }
+        }
 
 
 if __name__ == '__main__':

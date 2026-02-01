@@ -1,4 +1,4 @@
-# Wildbook Python Client
+# pywildbook
 
 A Python client library for interacting with the Wildbook v3 API. This package provides a simple, intuitive interface for authenticating with Wildbook instances and searching for wildlife encounters, individuals, and other data.
 
@@ -17,7 +17,7 @@ A Python client library for interacting with the Wildbook v3 API. This package p
 ### Using uv (recommended)
 
 ```bash
-cd wildbook-python-client
+cd pywildbook
 uv sync
 ```
 
@@ -30,8 +30,8 @@ pip install -e .
 ## Quick Start
 
 ```python
-from wildbook_python_client import WildbookClient
-from wildbook_python_client.queries import match_all
+from pywildbook import WildbookClient
+from pywildbook.queries import match_all
 import os
 
 # Create a client instance
@@ -58,7 +58,7 @@ client.logout()
 The client uses session-based authentication. After logging in, the session cookie is automatically managed for all subsequent requests. For security, it is highly recommended to use environment variables for sensitive credentials.
 
 ```python
-from wildbook_python_client import WildbookClient
+from pywildbook import WildbookClient
 import os
 
 # The base URL can also be set via the WILDBOOK_URL environment variable.
@@ -87,8 +87,8 @@ The client can be used as a context manager to ensure automatic logout:
 
 ```python
 import os
-from wildbook_python_client import WildbookClient
-from wildbook_python_client.queries import match_all
+from pywildbook import WildbookClient
+from pywildbook.queries import match_all
 
 # The base URL can also be set via the WILDBOOK_URL environment variable.
 with WildbookClient(os.environ.get('WILDBOOK_URL', 'http://localhost:8080')) as client:
@@ -104,7 +104,7 @@ with WildbookClient(os.environ.get('WILDBOOK_URL', 'http://localhost:8080')) as 
 ### Basic Search
 
 ```python
-from wildbook_python_client.queries import match_all
+from pywildbook.queries import match_all
 
 # Get all encounters
 results = client.search_encounters(match_all(), size=50)
@@ -119,38 +119,60 @@ results = client.search_encounters(
 )
 ```
 
+### My Encounters
+
+```python
+from pywildbook.queries import filter_by_species, combine_queries
+
+# Get my 10 most recent encounters
+my_encounters = client.search_encounters(
+    client.filter_current_user(),
+    size=10,
+    sort='year',
+    sort_order='desc'
+)
+
+# Combine with other filters: my encounters of a specific species
+query = combine_queries(
+    client.filter_current_user(),
+    filter_by_species('Megaptera novaeangliae'),
+    operator='must'
+)
+results = client.search_encounters(query)
+```
+
 ### Filtering by Species
 
 ```python
-from wildbook_python_client.queries import filter_by_species
+from pywildbook.queries import filter_by_species
 
-# Search for humpback whales
-query = filter_by_species('Megaptera', 'novaeangliae')
+# Search by species
+query = filter_by_species('novaeangliae')
 results = client.search_encounters(query)
 
-# Search by genus only
-query = filter_by_species('Megaptera')
+# Search by genus and species
+query = filter_by_species('Megaptera novaeangliae')
 results = client.search_encounters(query)
 ```
 
 ### Filtering by Date Range
 
 ```python
-from wildbook_python_client.queries import filter_by_year_range
+from pywildbook.queries import filter_by_date_range
 
-# Encounters from 2020 to 2023
-query = filter_by_year_range(start_year=2020, end_year=2023)
+# Encounters since 1 November 2025
+query = filter_by_date_range(start_date='2025-11-01')
 results = client.search_encounters(query)
 
-# Encounters from 2020 onwards
-query = filter_by_year_range(start_year=2020)
+# Encounters between two dates
+query = filter_by_date_range(start_date='2025-11-01', end_date='2025-12-01')
 results = client.search_encounters(query)
 ```
 
 ### Filtering by Location
 
 ```python
-from wildbook_python_client.queries import filter_by_location
+from pywildbook.queries import filter_by_location
 
 # Filter by country
 query = filter_by_location(country='Kenya')
@@ -169,7 +191,7 @@ results = client.search_encounters(query)
 ### Combining Multiple Filters
 
 ```python
-from wildbook_python_client.queries import (
+from pywildbook.queries import (
     filter_by_species,
     filter_by_sex,
     filter_by_year_range,
@@ -177,7 +199,7 @@ from wildbook_python_client.queries import (
 )
 
 # Female humpback whales from 2020-2023
-species = filter_by_species('Megaptera', 'novaeangliae')
+species = filter_by_species('Megaptera novaeangliae')
 sex = filter_by_sex('female')
 years = filter_by_year_range(2020, 2023)
 
@@ -188,7 +210,7 @@ results = client.search_encounters(query)
 ### Finding Unassigned Encounters
 
 ```python
-from wildbook_python_client.queries import missing
+from pywildbook.queries import missing
 
 # Encounters without an assigned individual
 query = missing('individualId')
@@ -198,7 +220,7 @@ unassigned = client.search_encounters(query)
 ### Text Search
 
 ```python
-from wildbook_python_client.queries import text_search
+from pywildbook.queries import text_search
 
 # Search for "beach" in locality descriptions
 query = text_search('verbatimLocality', 'beach', fuzzy=True)
@@ -208,7 +230,7 @@ results = client.search_encounters(query)
 ## Searching Individuals
 
 ```python
-from wildbook_python_client.queries import exists
+from pywildbook.queries import exists
 
 # Find individuals with encounters
 query = exists('encounters')
@@ -243,12 +265,13 @@ print(f"Latest bulk import: {dashboard.get('latestBulkImportTask')}")
 
 ## Available Query Helpers
 
-The `wildbook_python_client.queries` module provides these helper functions:
+The `pywildbook.queries` module provides these helper functions:
 
 - `match_all()` - Match all documents
 - `filter_by_sex(sex)` - Filter by sex
-- `filter_by_species(genus, specific_epithet=None)` - Filter by species
+- `filter_by_species(species, genus=None)` - Filter by species
 - `filter_by_year_range(start_year, end_year)` - Filter by year range
+- `filter_by_date_range(start_date, end_date)` - Filter by date range (ISO 8601)
 - `filter_by_location(country, location_id, min_lat, max_lat, min_lon, max_lon)` - Filter by location
 - `filter_by_individual(individual_id)` - Find encounters for an individual
 - `filter_by_submitter(submitter_id)` - Filter by submitter
@@ -283,7 +306,7 @@ results = client.search_encounters(custom_query)
 The client provides specific exceptions for different error scenarios:
 
 ```python
-from wildbook_python_client import (
+from pywildbook import (
     WildbookClient,
     AuthenticationError,
     NotAuthenticatedError,
@@ -341,7 +364,7 @@ uv run python examples/advanced_search.py
 ```bash
 # Clone the repository
 git clone <repo-url>
-cd wildbook-python-client
+cd pywildbook
 
 # Initialize with uv
 uv sync
@@ -353,9 +376,9 @@ uv run pytest
 ### Project Structure
 
 ```
-wildbook-python-client/
+pywildbook/
 ├── src/
-│   └── wildbook_python_client/
+│   └── pywildbook/
 │       ├── __init__.py          # Package exports
 │       ├── client.py            # Main client class
 │       ├── exceptions.py        # Custom exceptions
@@ -375,7 +398,7 @@ Main client class for interacting with Wildbook.
 
 #### Methods
 
-- `__init__(base_url: str)` - Create a new client instance
+- `__init__(base_url: str = None)` - Create a new client instance (falls back to WILDBOOK_URL env var)
 - `login(username: str, password: str) -> Dict` - Authenticate user
 - `logout() -> bool` - End session
 - `is_authenticated() -> bool` - Check authentication status
@@ -385,6 +408,7 @@ Main client class for interacting with Wildbook.
 - `get_encounter(encounter_id: str) -> Dict` - Get specific encounter
 - `search_individuals(query, from_=0, size=10, sort=None, sort_order=None) -> Dict` - Search individuals
 - `get_individual(individual_id: str) -> Dict` - Get specific individual
+- `filter_current_user() -> Dict` - Query for encounters assigned to the logged-in user
 
 ## Requirements
 

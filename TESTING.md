@@ -1,4 +1,4 @@
-# Testing Guide for wildbook-python-client
+# Testing Guide for pywildbook
 
 ## Quick Start
 
@@ -12,7 +12,7 @@ uv sync --extra dev
 uv run pytest
 
 # Run with coverage report
-uv run pytest --cov=wildbook_python_client --cov-report=term-missing
+uv run pytest --cov=pywildbook --cov-report=term-missing
 ```
 
 ## Test Coverage
@@ -72,7 +72,7 @@ uv run pytest -v
 
 ### With coverage
 ```bash
-uv run pytest --cov=wildbook_python_client --cov-report=html
+uv run pytest --cov=pywildbook --cov-report=html
 open htmlcov/index.html
 ```
 
@@ -177,7 +177,7 @@ jobs:
           pip install uv
           uv sync --extra dev
       - name: Run tests
-        run: uv run pytest --cov=wildbook_python_client
+        run: uv run pytest --cov=pywildbook
 ```
 
 ## Mocking Strategy
