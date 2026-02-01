@@ -1,5 +1,6 @@
 """Wildbook API client for authentication and resource management."""
 
+import functools
 from typing import Optional, Dict, Any, List
 import requests
 from urllib.parse import urljoin
@@ -23,6 +24,16 @@ from .exceptions import (
     ForbiddenError,
     APIError,
 )
+
+
+def _requires_auth(func):
+    """Decorator to ensure that a method is called on an authenticated client."""
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if not self.is_authenticated():
+            raise NotAuthenticatedError("Not authenticated. Call login() first.")
+        return func(self, *args, **kwargs)
+    return wrapper
 
 
 class WildbookClient:
@@ -186,6 +197,7 @@ class WildbookClient:
         """
         return self._authenticated
 
+    @_requires_auth
     def get_current_user(self) -> Dict[str, Any]:
         """Get information about the currently authenticated user.
 
@@ -199,13 +211,11 @@ class WildbookClient:
             >>> user = client.get_current_user()
             >>> print(user['username'])
         """
-        if not self._authenticated:
-            raise NotAuthenticatedError("Not authenticated. Call login() first.")
-
         url = self._make_url(API_USER)
         response = self.session.get(url)
         return self._handle_response(response)
 
+    @_requires_auth
     def get_user_home(self) -> Dict[str, Any]:
         """Get dashboard data for the current user.
 
@@ -219,13 +229,11 @@ class WildbookClient:
             >>> home = client.get_user_home()
             >>> print(home['latestEncounters'])
         """
-        if not self._authenticated:
-            raise NotAuthenticatedError("Not authenticated. Call login() first.")
-
         url = self._make_url(API_HOME)
         response = self.session.get(url)
         return self._handle_response(response)
 
+    @_requires_auth
     def _search(
         self,
         endpoint_path: str,
@@ -236,9 +244,6 @@ class WildbookClient:
         sort_order: Optional[str] = None
     ) -> Dict[str, Any]:
         """Internal method to handle common search logic."""
-        if not self._authenticated:
-            raise NotAuthenticatedError("Not authenticated. Call login() first.")
-
         url = self._make_url(endpoint_path)
         params = {
             'from': from_,
@@ -306,6 +311,7 @@ class WildbookClient:
             sort_order
         )
 
+    @_requires_auth
     def get_encounter(self, encounter_id: str) -> Dict[str, Any]:
         """Get details of a specific encounter by UUID.
 
@@ -322,9 +328,6 @@ class WildbookClient:
         Example:
             >>> encounter = client.get_encounter('123e4567-e89b-12d3-a456-426614174000')
         """
-        if not self._authenticated:
-            raise NotAuthenticatedError("Not authenticated. Call login() first.")
-
         url = self._make_url(f'{API_ENCOUNTERS_BASE}{encounter_id}')
         response = self.session.get(url)
         return self._handle_response(response)
@@ -361,6 +364,7 @@ class WildbookClient:
             sort_order
         )
 
+    @_requires_auth
     def get_individual(self, individual_id: str) -> Dict[str, Any]:
         """Get details of a specific individual by UUID.
 
@@ -374,13 +378,11 @@ class WildbookClient:
             NotAuthenticatedError: If not logged in
             NotFoundError: If individual doesn't exist
         """
-        if not self._authenticated:
-            raise NotAuthenticatedError("Not authenticated. Call login() first.")
-
         url = self._make_url(f'{API_INDIVIDUALS_BASE}{individual_id}')
         response = self.session.get(url)
         return self._handle_response(response)
 
+    @_requires_auth
     def filter_current_user(self) -> Dict[str, Any]:
         """Create a query to find encounters assigned to the current user.
 
@@ -395,9 +397,6 @@ class WildbookClient:
             >>> query = client.filter_current_user()
             >>> my_encounters = client.search_encounters(query)
         """
-        if not self._authenticated:
-            raise NotAuthenticatedError("Not authenticated. Call login() first.")
-
         return {
             'bool': {
                 'filter': [
