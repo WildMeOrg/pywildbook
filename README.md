@@ -1,16 +1,6 @@
 # pywildbook
 
-A Python client library for interacting with the Wildbook v3 API. This package provides a simple, intuitive interface for authenticating with Wildbook instances and searching for wildlife encounters, individuals, and other data.
-
-## Features
-
-- 🔐 Session-based authentication with automatic cookie management
-- 🔍 Powerful search capabilities using OpenSearch/Elasticsearch queries
-- 🛠️ Helper functions for common query patterns
-- 📝 Full type hints for better IDE support
-- 🎯 Simple, intuitive API design
-- ⚡ Built with `requests` for reliable HTTP handling
-- 🐍 Python 3.9+ support
+A Python client library for interacting with the Wildbook v3 API. This package provides an interface for authenticating with Wildbook instances and searching for wildlife encounters, individuals, and other data.
 
 ## Installation
 
@@ -376,7 +366,7 @@ cd pywildbook
 # Initialize with uv
 uv sync
 
-# Run tests (when available)
+# Run tests
 uv run pytest
 ```
 
@@ -423,21 +413,16 @@ Main client class for interacting with Wildbook.
 - requests >= 2.31.0
 
 ## License
-
-[Add your license here]
-
-## Contributing
-
-[Add contribution guidelines here]
+[MIT License](LICENSE.md)
 
 ## Support
 
-For issues and questions:
-- GitHub Issues: [Add URL]
-- Documentation: [Add URL]
-- Wildbook Documentation: https://docs.wildme.org/
+For issues, questions, and more information:
+- [GitHub Issues](https://github.com/WildMeOrg/pywildbook/issues)
+- [Wildbook OpenAPI.yaml](https://github.com/WildMeOrg/Wildbook/blob/main/src/main/resources/openapi.yaml)
+- [Wildbook Documentation](https://docs.wildme.org/)
 
 ## Related Projects
 
 - [Wildbook](https://github.com/WildMeOrg/Wildbook) - The main Wildbook platform
-- [Codex](https://github.com/WildMeOrg/codex) - Next-generation Wildbook
+- [RWildbook](https://github.com/WildMeOrg/RWildbook) - An R client with aligned functionality
