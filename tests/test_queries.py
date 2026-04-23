@@ -11,6 +11,8 @@ from pywildbook.queries import (
     filter_by_individual,
     filter_by_submitter,
     text_search,
+    field_exists,
+    field_missing,
     exists,
     missing,
     combine_queries
@@ -217,6 +219,21 @@ class TestLocationQueries:
         query = filter_by_location()
         assert query == match_all()
 
+    def test_filter_by_location_partial_bbox_lat_only_raises(self):
+        """Partial bbox with only lat params raises ValueError."""
+        with pytest.raises(ValueError, match="bounding box"):
+            filter_by_location(min_lat=-5.0, max_lat=5.0)
+
+    def test_filter_by_location_partial_bbox_lon_only_raises(self):
+        """Partial bbox with only lon params raises ValueError."""
+        with pytest.raises(ValueError, match="bounding box"):
+            filter_by_location(min_lon=35.0, max_lon=42.0)
+
+    def test_filter_by_location_partial_bbox_one_param_raises(self):
+        """Single bbox param raises ValueError."""
+        with pytest.raises(ValueError, match="bounding box"):
+            filter_by_location(min_lat=-5.0)
+
 
 class TestTextSearch:
     """Test text search queries."""
@@ -237,17 +254,29 @@ class TestTextSearch:
 class TestExistenceQueries:
     """Test field existence queries."""
 
-    def test_exists(self):
-        """Test exists query."""
-        query = exists('individualId')
+    def test_field_exists(self):
+        """Test field_exists query."""
+        query = field_exists('individualId')
         assert query == {'exists': {'field': 'individualId'}}
 
-    def test_missing(self):
-        """Test missing query."""
-        query = missing('individualId')
+    def test_field_missing(self):
+        """Test field_missing query."""
+        query = field_missing('individualId')
         assert 'bool' in query
         assert 'must_not' in query['bool']
         assert query['bool']['must_not'] == [{'exists': {'field': 'individualId'}}]
+
+    def test_exists_is_deprecated(self):
+        """exists() emits DeprecationWarning and returns the same result."""
+        with pytest.warns(DeprecationWarning, match="field_exists"):
+            query = exists('individualId')
+        assert query == field_exists('individualId')
+
+    def test_missing_is_deprecated(self):
+        """missing() emits DeprecationWarning and returns the same result."""
+        with pytest.warns(DeprecationWarning, match="field_missing"):
+            query = missing('individualId')
+        assert query == field_missing('individualId')
 
 
 class TestCombineQueries:
@@ -297,16 +326,33 @@ class TestCombineQueries:
         assert 'must_not' in query['bool']
         assert len(query['bool']['must_not']) == 2
 
-    def test_combine_queries_single_returns_unchanged(self):
-        """Test that single query is returned unchanged regardless of operator."""
+    def test_combine_queries_single_operator_wrapping(self):
+        """Test that single query behavior depends on operator."""
         sex_query = filter_by_sex('female')
 
-        # Single query should return unchanged, operator is ignored
+        # Single query with 'must' should return unchanged
         query = combine_queries(sex_query, operator='must')
         assert query == sex_query
 
+        # Single query with 'should' or 'must_not' should be wrapped in bool
         query = combine_queries(sex_query, operator='should')
-        assert query == sex_query
+        assert query == {'bool': {'should': [sex_query]}}
+
+        query = combine_queries(sex_query, operator='must_not')
+        assert query == {'bool': {'must_not': [sex_query]}}
+
+    def test_combine_queries_invalid_operator_raises(self):
+        """Invalid operator raises ValueError."""
+        with pytest.raises(ValueError, match="operator"):
+            combine_queries(filter_by_sex('female'), filter_by_sex('male'), operator='filter')
+
+    def test_combine_queries_all_valid_operators_accepted(self):
+        """All three valid operators are accepted without error."""
+        q1 = filter_by_sex('female')
+        q2 = filter_by_sex('male')
+        combine_queries(q1, q2, operator='must')
+        combine_queries(q1, q2, operator='should')
+        combine_queries(q1, q2, operator='must_not')
 
 
 if __name__ == '__main__':

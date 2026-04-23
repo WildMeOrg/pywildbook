@@ -200,10 +200,10 @@ results = client.search_encounters(query)
 ### Finding Unassigned Encounters
 
 ```python
-from pywildbook.queries import missing
+from pywildbook.queries import field_missing
 
 # Encounters without an assigned individual
-query = missing('individualId')
+query = field_missing('individualId')
 unassigned = client.search_encounters(query)
 ```
 
@@ -220,10 +220,10 @@ results = client.search_encounters(query)
 ## Searching Individuals
 
 ```python
-from pywildbook.queries import exists
+from pywildbook.queries import field_exists
 
 # Find individuals with encounters
-query = exists('encounters')
+query = field_exists('encounters')
 results = client.search_individuals(query, size=20)
 
 for individual in results['hits']:
@@ -266,8 +266,8 @@ The `pywildbook.queries` module provides these helper functions:
 - `filter_by_individual(individual_id)` - Find encounters for an individual
 - `filter_by_submitter(submitter_id)` - Filter by submitter
 - `text_search(field, text, fuzzy=False)` - Text search in a field
-- `exists(field)` - Find documents where field exists
-- `missing(field)` - Find documents where field is missing
+- `field_exists(field)` - Find documents where field exists
+- `field_missing(field)` - Find documents where field is missing
 - `combine_queries(*queries, operator='must')` - Combine multiple queries with AND/OR/NOT logic
 
 ## Custom Queries
@@ -331,7 +331,6 @@ See the `examples/` directory for complete examples:
 
 - `basic_usage.py` - Basic login, search, and logout
 - `advanced_search.py` - Complex queries, pagination, and filtering
-- `encounter_map.ipynb` - Plot encounter locations on an interactive map (requires `ipyleaflet`)
 - `individual_statistics.ipynb` - Analyze individual encounter patterns and statistics
 
 Run examples:
@@ -348,10 +347,9 @@ uv run python examples/basic_usage.py
 # Run advanced example
 uv run python examples/advanced_search.py
 
-# Open a notebook (install ipyleaflet for encounter_map.ipynb)
-uv pip install ipyleaflet
-jupyter notebook examples/encounter_map.ipynb
-jupyter notebook examples/individual_statistics.ipynb
+# Install notebook dependencies, then open a notebook
+uv sync --extra notebook
+uv run jupyter notebook examples/individual_statistics.ipynb
 ```
 
 ## Development
@@ -369,6 +367,16 @@ uv sync
 # Run tests
 uv run pytest
 ```
+
+### Notebook output stripping
+
+`nbstripout` is configured to automatically strip cell outputs from `.ipynb` files before they are staged. After cloning, activate the git filter once:
+
+```bash
+uv run nbstripout install
+```
+
+After that, `git add` on any notebook will silently strip outputs before staging. Your local working copy keeps its outputs for interactive use; only clean notebooks are committed.
 
 ### Project Structure
 
@@ -409,8 +417,18 @@ Main client class for interacting with Wildbook.
 
 ## Requirements
 
-- Python >= 3.9
+- Python >= 3.11
 - requests >= 2.31.0
+
+### Optional: notebook extras
+
+The `encounter_map.ipynb` and `individual_statistics.ipynb` examples require additional dependencies. Install with:
+
+```bash
+uv sync --extra notebook
+```
+
+This adds `ipykernel`, `ipyleaflet`, and `python-dotenv`.
 
 ## License
 [MIT License](LICENSE.md)
@@ -426,3 +444,13 @@ For issues, questions, and more information:
 
 - [Wildbook](https://github.com/WildMeOrg/Wildbook) - The main Wildbook platform
 - [RWildbook](https://github.com/WildMeOrg/RWildbook) - An R client with aligned functionality
+
+## Versioning
+
+pywildbook and RWildbook follow a shared versioning convention to make feature equivalence explicit:
+
+- **Major and minor versions are synchronised across both libraries.** `pywildbook 1.2.x` and `RWildbook 1.2.x` expose the same API surface.
+- **Patch versions are independent.** Bug fixes, dependency updates, and other library-specific changes do not require a coordinated release.
+- **Minor bumps are coordinated.** When new features are added they land in both libraries together, then both get the minor bump.
+
+This project follows [Semantic Versioning](https://semver.org/).

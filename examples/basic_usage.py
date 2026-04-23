@@ -22,7 +22,7 @@ def main():
 
     try:
         # Login
-        print(f"Attempting to log in...")
+        print("Attempting to log in...")
         user_info = client.login() # Credentials now handled by client from env vars or explicitly passed
         print(f"✓ Logged in successfully as {user_info.get('username')}")
         print(f"  User ID: {user_info.get('id')}")

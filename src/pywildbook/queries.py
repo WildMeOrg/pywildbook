@@ -4,11 +4,12 @@ This module provides convenient functions for building OpenSearch/Elasticsearch
 queries without needing to know the query DSL syntax.
 """
 
-from typing import Optional, Union, Dict, Any
-from datetime import date
+import warnings
+from datetime import date, datetime
+from typing import Any
 
 
-def match_all() -> Dict[str, Any]:
+def match_all() -> dict[str, Any]:
     """Create a query that matches all documents.
 
     Returns:
@@ -20,7 +21,7 @@ def match_all() -> Dict[str, Any]:
     return {'match_all': {}}
 
 
-def filter_by_sex(sex: str) -> Dict[str, Any]:
+def filter_by_sex(sex: str) -> dict[str, Any]:
     """Create a query to filter by sex.
 
     Args:
@@ -36,7 +37,7 @@ def filter_by_sex(sex: str) -> Dict[str, Any]:
     }
 
 
-def filter_by_species(species: str, genus: Optional[str] = None) -> Dict[str, Any]:
+def filter_by_species(species: str, genus: str | None = None) -> dict[str, Any]:
     """Create a query to filter by species.
 
     Searches across the taxonomy, genus, and specificEpithet fields
@@ -102,7 +103,7 @@ def filter_by_species(species: str, genus: Optional[str] = None) -> Dict[str, An
         }
 
 
-def filter_by_year_range(start_year: Optional[int] = None, end_year: Optional[int] = None) -> Dict[str, Any]:
+def filter_by_year_range(start_year: int | None = None, end_year: int | None = None) -> dict[str, Any]:
     """Create a query to filter by year range.
 
     Args:
@@ -116,7 +117,7 @@ def filter_by_year_range(start_year: Optional[int] = None, end_year: Optional[in
         >>> query = filter_by_year_range(2020, 2023)
         >>> results = client.search_encounters(query)
     """
-    range_query: Dict[str, Any] = {}
+    range_query: dict[str, Any] = {}
     if start_year is not None:
         range_query['gte'] = start_year
     if end_year is not None:
@@ -130,9 +131,9 @@ def filter_by_year_range(start_year: Optional[int] = None, end_year: Optional[in
 
 
 def filter_by_date_range(
-    start_date: Optional[Union[str, date]] = None,
-    end_date: Optional[Union[str, date]] = None
-) -> Dict[str, Any]:
+    start_date: str | date | None = None,
+    end_date: str | date | None = None
+) -> dict[str, Any]:
     """Create a query to filter by date range.
 
     Dates are formatted as ISO 8601 timestamps in UTC. The start date is
@@ -140,10 +141,10 @@ def filter_by_date_range(
     as the end of that day (23:59:59Z).
 
     Args:
-        start_date: Earliest date (inclusive). Accepts a date object or a
-            string in 'YYYY-MM-DD' format (optional).
-        end_date: Latest date (inclusive). Accepts a date object or a
-            string in 'YYYY-MM-DD' format (optional).
+        start_date: Earliest date (inclusive). Accepts a date or datetime
+            object or a string in 'YYYY-MM-DD' format (optional).
+        end_date: Latest date (inclusive). Accepts a date or datetime
+            object or a string in 'YYYY-MM-DD' format (optional).
 
     Returns:
         Query dictionary
@@ -155,16 +156,20 @@ def filter_by_date_range(
         >>> # Encounters between two dates
         >>> query = filter_by_date_range(start_date='2025-11-01', end_date='2025-12-01')
     """
-    range_query: Dict[str, Any] = {}
+    range_query: dict[str, Any] = {}
 
     if start_date is not None:
         if isinstance(start_date, str):
             start_date = date.fromisoformat(start_date)
+        elif isinstance(start_date, datetime):
+            start_date = start_date.date()
         range_query['gte'] = f'{start_date.isoformat()}T00:00:00Z'
 
     if end_date is not None:
         if isinstance(end_date, str):
             end_date = date.fromisoformat(end_date)
+        elif isinstance(end_date, datetime):
+            end_date = end_date.date()
         range_query['lte'] = f'{end_date.isoformat()}T23:59:59Z'
 
     return {
@@ -175,13 +180,13 @@ def filter_by_date_range(
 
 
 def filter_by_location(
-    country: Optional[str] = None,
-    location_id: Optional[str] = None,
-    min_lat: Optional[float] = None,
-    max_lat: Optional[float] = None,
-    min_lon: Optional[float] = None,
-    max_lon: Optional[float] = None
-) -> Dict[str, Any]:
+    country: str | None = None,
+    location_id: str | None = None,
+    min_lat: float | None = None,
+    max_lat: float | None = None,
+    min_lon: float | None = None,
+    max_lon: float | None = None
+) -> dict[str, Any]:
     """Create a query to filter by location.
 
     Args:
@@ -213,7 +218,15 @@ def filter_by_location(
     if location_id:
         filters.append({'term': {'locationId': location_id}})
 
-    if all(v is not None for v in [min_lat, max_lat, min_lon, max_lon]):
+    bbox_params = {'min_lat': min_lat, 'max_lat': max_lat, 'min_lon': min_lon, 'max_lon': max_lon}
+    bbox_provided = [k for k, v in bbox_params.items() if v is not None]
+    if 0 < len(bbox_provided) < 4:
+        missing = [k for k in bbox_params if k not in bbox_provided]
+        raise ValueError(
+            f"Incomplete bounding box: provided {bbox_provided}, missing {missing}. "
+            "Supply all four of min_lat, max_lat, min_lon, max_lon."
+        )
+    if len(bbox_provided) == 4:
         filters.append({
             'geo_bounding_box': {
                 'locationGeoPoint': {
@@ -241,7 +254,7 @@ def filter_by_location(
         }
 
 
-def combine_queries(*queries: Dict[str, Any], operator: str = 'must') -> Dict[str, Any]:
+def combine_queries(*queries: dict[str, Any], operator: str = 'must') -> dict[str, Any]:
     """Combine multiple queries using boolean logic.
 
     Args:
@@ -257,9 +270,18 @@ def combine_queries(*queries: Dict[str, Any], operator: str = 'must') -> Dict[st
         >>> combined = combine_queries(sex_query, year_query, operator='must')
         >>> results = client.search_encounters(combined)
     """
+    _VALID_OPERATORS = {'must', 'should', 'must_not'}
+    if operator not in _VALID_OPERATORS:
+        raise ValueError(
+            f"Invalid operator {operator!r}. Must be one of: {sorted(_VALID_OPERATORS)}"
+        )
+
     if not queries:
         return match_all()
-    elif len(queries) == 1:
+
+    # If only one query and operator is 'must', we can return it directly.
+    # Otherwise (must_not, should), we need the bool wrapper.
+    if len(queries) == 1 and operator == 'must':
         return queries[0]
 
     return {
@@ -269,7 +291,7 @@ def combine_queries(*queries: Dict[str, Any], operator: str = 'must') -> Dict[st
     }
 
 
-def filter_by_individual(individual_id: str) -> Dict[str, Any]:
+def filter_by_individual(individual_id: str) -> dict[str, Any]:
     """Create a query to find all encounters for a specific individual.
 
     Args:
@@ -289,7 +311,7 @@ def filter_by_individual(individual_id: str) -> Dict[str, Any]:
     }
 
 
-def text_search(field: str, text: str, fuzzy: bool = False) -> Dict[str, Any]:
+def text_search(field: str, text: str, fuzzy: bool = False) -> dict[str, Any]:
     """Create a text search query.
 
     Args:
@@ -321,7 +343,7 @@ def text_search(field: str, text: str, fuzzy: bool = False) -> Dict[str, Any]:
         }
 
 
-def filter_by_submitter(submitter_id: str) -> Dict[str, Any]:
+def filter_by_submitter(submitter_id: str) -> dict[str, Any]:
     """Create a query to find encounters submitted by a specific user.
 
     Args:
@@ -341,7 +363,7 @@ def filter_by_submitter(submitter_id: str) -> Dict[str, Any]:
     }
 
 
-def exists(field: str) -> Dict[str, Any]:
+def field_exists(field: str) -> dict[str, Any]:
     """Create a query to find documents where a field exists and has a value.
 
     Args:
@@ -352,7 +374,7 @@ def exists(field: str) -> Dict[str, Any]:
 
     Example:
         >>> # Find encounters with an assigned individual
-        >>> query = exists('individualId')
+        >>> query = field_exists('individualId')
         >>> results = client.search_encounters(query)
     """
     return {
@@ -362,7 +384,7 @@ def exists(field: str) -> Dict[str, Any]:
     }
 
 
-def missing(field: str) -> Dict[str, Any]:
+def field_missing(field: str) -> dict[str, Any]:
     """Create a query to find documents where a field is missing or null.
 
     Args:
@@ -373,13 +395,25 @@ def missing(field: str) -> Dict[str, Any]:
 
     Example:
         >>> # Find encounters without an assigned individual
-        >>> query = missing('individualId')
+        >>> query = field_missing('individualId')
         >>> unassigned = client.search_encounters(query)
     """
     return {
         'bool': {
             'must_not': [
-                exists(field)
+                field_exists(field)
             ]
         }
     }
+
+
+def exists(field: str) -> dict[str, Any]:
+    """Deprecated: use field_exists() instead."""
+    warnings.warn("exists() is deprecated, use field_exists() instead", DeprecationWarning, stacklevel=2)
+    return field_exists(field)
+
+
+def missing(field: str) -> dict[str, Any]:
+    """Deprecated: use field_missing() instead."""
+    warnings.warn("missing() is deprecated, use field_missing() instead", DeprecationWarning, stacklevel=2)
+    return field_missing(field)

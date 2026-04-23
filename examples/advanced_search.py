@@ -12,13 +12,11 @@ from pywildbook import WildbookClient
 from pywildbook.queries import (
     match_all,
     filter_by_sex,
-    filter_by_species,
     filter_by_year_range,
     filter_by_location,
     combine_queries,
-    filter_by_individual,
-    exists,
-    missing,
+    field_exists,
+    field_missing,
     text_search,
 )
 
@@ -90,7 +88,7 @@ def main():
         print("Example 3: Encounters without assigned individuals")
         print("=" * 60)
 
-        unassigned_query = missing('individualId')
+        unassigned_query = field_missing('individualId')
         results = client.search_encounters(unassigned_query, size=5)
 
         print(f"Found {len(results.get('hits', []))} unassigned encounters")
@@ -161,7 +159,7 @@ def main():
         print("=" * 60)
 
         # Search for individuals with assigned encounters
-        has_encounters = exists('encounters')
+        has_encounters = field_exists('encounters')
         results = client.search_individuals(has_encounters, size=5)
 
         print(f"Found {len(results.get('hits', []))} individuals with encounters")

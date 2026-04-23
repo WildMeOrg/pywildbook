@@ -1,10 +1,20 @@
 """Wildbook API client for authentication and resource management."""
 
 import functools
-from typing import Optional, Dict, Any, List
-import requests
-from urllib.parse import urljoin
 import os
+from typing import Any
+from urllib.parse import urljoin
+
+import requests
+
+from .exceptions import (
+    APIError,
+    AuthenticationError,
+    BadRequestError,
+    ForbiddenError,
+    NotAuthenticatedError,
+    NotFoundError,
+)
 
 # API Endpoint Constants
 API_LOGIN = '/api/v3/login'
@@ -16,14 +26,7 @@ API_ENCOUNTERS_BASE = '/api/v3/encounters/'
 API_SEARCH_INDIVIDUAL = '/api/v3/search/individual'
 API_INDIVIDUALS_BASE = '/api/v3/individuals/'
 
-from .exceptions import (
-    AuthenticationError,
-    NotAuthenticatedError,
-    NotFoundError,
-    BadRequestError,
-    ForbiddenError,
-    APIError,
-)
+DEFAULT_TIMEOUT = 30  # seconds
 
 
 def _requires_auth(func):
@@ -53,7 +56,7 @@ class WildbookClient:
         >>> client.logout()
     """
 
-    def __init__(self, base_url: Optional[str] = None):
+    def __init__(self, base_url: str | None = None):
         """Initialize the Wildbook client.
 
         Args:
@@ -70,7 +73,7 @@ class WildbookClient:
         self.base_url = base_url.rstrip('/')
         self.session = requests.Session()
         self._authenticated = False
-        self._user_info: Optional[Dict[str, Any]] = None
+        self._user_info: dict[str, Any] | None = None
 
     def _make_url(self, path: str) -> str:
         """Construct full URL from path.
@@ -83,7 +86,7 @@ class WildbookClient:
         """
         return urljoin(self.base_url + '/', path.lstrip('/'))
 
-    def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
+    def _handle_response(self, response: requests.Response) -> dict[str, Any]:
         """Handle API response and raise appropriate exceptions.
 
         Args:
@@ -114,14 +117,18 @@ class WildbookClient:
         elif response.status_code == 404:
             raise NotFoundError("Resource not found")
         elif response.status_code == 400:
+            # Handle list of errors or single error message
             errors = data.get('errors', [])
-            error_msg = ', '.join([e.get('message', str(e)) for e in errors]) if errors else 'Bad request'
+            if isinstance(errors, list) and errors:
+                error_msg = ', '.join([e.get('message', str(e)) if isinstance(e, dict) else str(e) for e in errors])
+            else:
+                error_msg = data.get('error', data.get('message', 'Bad request'))
             raise BadRequestError(f"Bad request: {error_msg}")
         else:
             error_msg = data.get('error', f'HTTP {response.status_code}')
             raise APIError(error_msg, status_code=response.status_code, response_data=data)
 
-    def login(self, username: Optional[str] = None, password: Optional[str] = None) -> Dict[str, Any]:
+    def login(self, username: str | None = None, password: str | None = None) -> dict[str, Any]:
         """Authenticate with the Wildbook API.
 
         Args:
@@ -141,8 +148,10 @@ class WildbookClient:
             >>> client.login()
             {'success': True, 'id': '...', 'username': 'user@example.com', ...}
         """
-        username = username or os.environ.get('WILDBOOK_USERNAME')
-        password = password or os.environ.get('WILDBOOK_PASSWORD')
+        if username is None:
+            username = os.environ.get('WILDBOOK_USERNAME')
+        if password is None:
+            password = os.environ.get('WILDBOOK_PASSWORD')
 
         if not username:
             raise AuthenticationError("Username not provided and WILDBOOK_USERNAME environment variable not set.")
@@ -155,7 +164,7 @@ class WildbookClient:
             'password': password
         }
 
-        response = self.session.post(url, json=payload)
+        response = self.session.post(url, json=payload, timeout=DEFAULT_TIMEOUT)
         data = self._handle_response(response)
 
         if data.get('success'):
@@ -178,7 +187,7 @@ class WildbookClient:
         url = self._make_url(API_LOGOUT)
 
         try:
-            response = self.session.post(url)
+            response = self.session.post(url, timeout=DEFAULT_TIMEOUT)
             data = self._handle_response(response)
             self._authenticated = False
             self._user_info = None
@@ -198,7 +207,7 @@ class WildbookClient:
         return self._authenticated
 
     @_requires_auth
-    def get_current_user(self) -> Dict[str, Any]:
+    def get_current_user(self) -> dict[str, Any]:
         """Get information about the currently authenticated user.
 
         Returns:
@@ -212,11 +221,11 @@ class WildbookClient:
             >>> print(user['username'])
         """
         url = self._make_url(API_USER)
-        response = self.session.get(url)
+        response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
     @_requires_auth
-    def get_user_home(self) -> Dict[str, Any]:
+    def get_user_home(self) -> dict[str, Any]:
         """Get dashboard data for the current user.
 
         Returns:
@@ -230,19 +239,19 @@ class WildbookClient:
             >>> print(home['latestEncounters'])
         """
         url = self._make_url(API_HOME)
-        response = self.session.get(url)
+        response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
     @_requires_auth
     def _search(
         self,
         endpoint_path: str,
-        query: Dict[str, Any],
+        query: dict[str, Any],
         from_: int = 0,
         size: int = 10,
-        sort: Optional[str] = None,
-        sort_order: Optional[str] = None
-    ) -> Dict[str, Any]:
+        sort: str | None = None,
+        sort_order: str | None = None
+    ) -> dict[str, Any]:
         """Internal method to handle common search logic."""
         url = self._make_url(endpoint_path)
         params = {
@@ -260,17 +269,17 @@ class WildbookClient:
         else:
             search_body = query
 
-        response = self.session.post(url, json=search_body, params=params)
+        response = self.session.post(url, json=search_body, params=params, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
     def search_encounters(
         self,
-        query: Dict[str, Any],
+        query: dict[str, Any],
         from_: int = 0,
         size: int = 10,
-        sort: Optional[str] = None,
-        sort_order: Optional[str] = None
-    ) -> Dict[str, Any]:
+        sort: str | None = None,
+        sort_order: str | None = None
+    ) -> dict[str, Any]:
         """Search for encounters using OpenSearch/Elasticsearch query syntax.
 
         Args:
@@ -312,7 +321,7 @@ class WildbookClient:
         )
 
     @_requires_auth
-    def get_encounter(self, encounter_id: str) -> Dict[str, Any]:
+    def get_encounter(self, encounter_id: str) -> dict[str, Any]:
         """Get details of a specific encounter by UUID.
 
         Args:
@@ -329,17 +338,17 @@ class WildbookClient:
             >>> encounter = client.get_encounter('123e4567-e89b-12d3-a456-426614174000')
         """
         url = self._make_url(f'{API_ENCOUNTERS_BASE}{encounter_id}')
-        response = self.session.get(url)
+        response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
     def search_individuals(
         self,
-        query: Dict[str, Any],
+        query: dict[str, Any],
         from_: int = 0,
         size: int = 10,
-        sort: Optional[str] = None,
-        sort_order: Optional[str] = None
-    ) -> Dict[str, Any]:
+        sort: str | None = None,
+        sort_order: str | None = None
+    ) -> dict[str, Any]:
         """Search for individuals using OpenSearch/Elasticsearch query syntax.
 
         Args:
@@ -365,7 +374,7 @@ class WildbookClient:
         )
 
     @_requires_auth
-    def get_individual(self, individual_id: str) -> Dict[str, Any]:
+    def get_individual(self, individual_id: str) -> dict[str, Any]:
         """Get details of a specific individual by UUID.
 
         Args:
@@ -379,11 +388,11 @@ class WildbookClient:
             NotFoundError: If individual doesn't exist
         """
         url = self._make_url(f'{API_INDIVIDUALS_BASE}{individual_id}')
-        response = self.session.get(url)
+        response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
     @_requires_auth
-    def filter_current_user(self) -> Dict[str, Any]:
+    def filter_current_user(self) -> dict[str, Any]:
         """Create a query to find encounters assigned to the current user.
 
         Returns:
