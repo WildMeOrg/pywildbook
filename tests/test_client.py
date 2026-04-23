@@ -2,7 +2,7 @@
 
 import pytest
 import os
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from pywildbook import WildbookClient
 from pywildbook.exceptions import (
     AuthenticationError,
@@ -10,7 +10,6 @@ from pywildbook.exceptions import (
     NotFoundError,
     BadRequestError,
     ForbiddenError,
-    APIError
 )
 
 

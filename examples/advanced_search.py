@@ -12,11 +12,9 @@ from pywildbook import WildbookClient
 from pywildbook.queries import (
     match_all,
     filter_by_sex,
-    filter_by_species,
     filter_by_year_range,
     filter_by_location,
     combine_queries,
-    filter_by_individual,
     exists,
     missing,
     text_search,
