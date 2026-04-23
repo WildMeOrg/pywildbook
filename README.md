@@ -444,3 +444,13 @@ For issues, questions, and more information:
 
 - [Wildbook](https://github.com/WildMeOrg/Wildbook) - The main Wildbook platform
 - [RWildbook](https://github.com/WildMeOrg/RWildbook) - An R client with aligned functionality
+
+## Versioning
+
+pywildbook and RWildbook follow a shared versioning convention to make feature equivalence explicit:
+
+- **Major and minor versions are synchronised across both libraries.** `pywildbook 1.2.x` and `RWildbook 1.2.x` expose the same API surface.
+- **Patch versions are independent.** Bug fixes, dependency updates, and other library-specific changes do not require a coordinated release.
+- **Minor bumps are coordinated.** When new features are added they land in both libraries together, then both get the minor bump.
+
+This project follows [Semantic Versioning](https://semver.org/).
