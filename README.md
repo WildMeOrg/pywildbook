@@ -331,7 +331,6 @@ See the `examples/` directory for complete examples:
 
 - `basic_usage.py` - Basic login, search, and logout
 - `advanced_search.py` - Complex queries, pagination, and filtering
-- `encounter_map.ipynb` - Plot encounter locations on an interactive map
 - `individual_statistics.ipynb` - Analyze individual encounter patterns and statistics
 
 Run examples:
@@ -350,7 +349,6 @@ uv run python examples/advanced_search.py
 
 # Install notebook dependencies, then open a notebook
 uv sync --extra notebook
-uv run jupyter notebook examples/encounter_map.ipynb
 uv run jupyter notebook examples/individual_statistics.ipynb
 ```
 
