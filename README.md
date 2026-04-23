@@ -368,6 +368,16 @@ uv sync
 uv run pytest
 ```
 
+### Notebook output stripping
+
+`nbstripout` is configured to automatically strip cell outputs from `.ipynb` files before they are staged. After cloning, activate the git filter once:
+
+```bash
+uv run nbstripout install
+```
+
+After that, `git add` on any notebook will silently strip outputs before staging. Your local working copy keeps its outputs for interactive use; only clean notebooks are committed.
+
 ### Project Structure
 
 ```
