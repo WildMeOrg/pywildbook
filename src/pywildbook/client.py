@@ -1,10 +1,20 @@
 """Wildbook API client for authentication and resource management."""
 
 import functools
-from typing import Optional, Dict, Any, List
-import requests
-from urllib.parse import urljoin
 import os
+from typing import Any
+from urllib.parse import urljoin
+
+import requests
+
+from .exceptions import (
+    APIError,
+    AuthenticationError,
+    BadRequestError,
+    ForbiddenError,
+    NotAuthenticatedError,
+    NotFoundError,
+)
 
 # API Endpoint Constants
 API_LOGIN = '/api/v3/login'
@@ -15,15 +25,6 @@ API_SEARCH_ENCOUNTER = '/api/v3/search/encounter'
 API_ENCOUNTERS_BASE = '/api/v3/encounters/'
 API_SEARCH_INDIVIDUAL = '/api/v3/search/individual'
 API_INDIVIDUALS_BASE = '/api/v3/individuals/'
-
-from .exceptions import (
-    AuthenticationError,
-    NotAuthenticatedError,
-    NotFoundError,
-    BadRequestError,
-    ForbiddenError,
-    APIError,
-)
 
 
 def _requires_auth(func):
@@ -53,7 +54,7 @@ class WildbookClient:
         >>> client.logout()
     """
 
-    def __init__(self, base_url: Optional[str] = None):
+    def __init__(self, base_url: str | None = None):
         """Initialize the Wildbook client.
 
         Args:
@@ -70,7 +71,7 @@ class WildbookClient:
         self.base_url = base_url.rstrip('/')
         self.session = requests.Session()
         self._authenticated = False
-        self._user_info: Optional[Dict[str, Any]] = None
+        self._user_info: dict[str, Any] | None = None
 
     def _make_url(self, path: str) -> str:
         """Construct full URL from path.
@@ -83,7 +84,7 @@ class WildbookClient:
         """
         return urljoin(self.base_url + '/', path.lstrip('/'))
 
-    def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
+    def _handle_response(self, response: requests.Response) -> dict[str, Any]:
         """Handle API response and raise appropriate exceptions.
 
         Args:
@@ -121,7 +122,7 @@ class WildbookClient:
             error_msg = data.get('error', f'HTTP {response.status_code}')
             raise APIError(error_msg, status_code=response.status_code, response_data=data)
 
-    def login(self, username: Optional[str] = None, password: Optional[str] = None) -> Dict[str, Any]:
+    def login(self, username: str | None = None, password: str | None = None) -> dict[str, Any]:
         """Authenticate with the Wildbook API.
 
         Args:
@@ -198,7 +199,7 @@ class WildbookClient:
         return self._authenticated
 
     @_requires_auth
-    def get_current_user(self) -> Dict[str, Any]:
+    def get_current_user(self) -> dict[str, Any]:
         """Get information about the currently authenticated user.
 
         Returns:
@@ -216,7 +217,7 @@ class WildbookClient:
         return self._handle_response(response)
 
     @_requires_auth
-    def get_user_home(self) -> Dict[str, Any]:
+    def get_user_home(self) -> dict[str, Any]:
         """Get dashboard data for the current user.
 
         Returns:
@@ -237,12 +238,12 @@ class WildbookClient:
     def _search(
         self,
         endpoint_path: str,
-        query: Dict[str, Any],
+        query: dict[str, Any],
         from_: int = 0,
         size: int = 10,
-        sort: Optional[str] = None,
-        sort_order: Optional[str] = None
-    ) -> Dict[str, Any]:
+        sort: str | None = None,
+        sort_order: str | None = None
+    ) -> dict[str, Any]:
         """Internal method to handle common search logic."""
         url = self._make_url(endpoint_path)
         params = {
@@ -265,12 +266,12 @@ class WildbookClient:
 
     def search_encounters(
         self,
-        query: Dict[str, Any],
+        query: dict[str, Any],
         from_: int = 0,
         size: int = 10,
-        sort: Optional[str] = None,
-        sort_order: Optional[str] = None
-    ) -> Dict[str, Any]:
+        sort: str | None = None,
+        sort_order: str | None = None
+    ) -> dict[str, Any]:
         """Search for encounters using OpenSearch/Elasticsearch query syntax.
 
         Args:
@@ -312,7 +313,7 @@ class WildbookClient:
         )
 
     @_requires_auth
-    def get_encounter(self, encounter_id: str) -> Dict[str, Any]:
+    def get_encounter(self, encounter_id: str) -> dict[str, Any]:
         """Get details of a specific encounter by UUID.
 
         Args:
@@ -334,12 +335,12 @@ class WildbookClient:
 
     def search_individuals(
         self,
-        query: Dict[str, Any],
+        query: dict[str, Any],
         from_: int = 0,
         size: int = 10,
-        sort: Optional[str] = None,
-        sort_order: Optional[str] = None
-    ) -> Dict[str, Any]:
+        sort: str | None = None,
+        sort_order: str | None = None
+    ) -> dict[str, Any]:
         """Search for individuals using OpenSearch/Elasticsearch query syntax.
 
         Args:
@@ -365,7 +366,7 @@ class WildbookClient:
         )
 
     @_requires_auth
-    def get_individual(self, individual_id: str) -> Dict[str, Any]:
+    def get_individual(self, individual_id: str) -> dict[str, Any]:
         """Get details of a specific individual by UUID.
 
         Args:
@@ -383,7 +384,7 @@ class WildbookClient:
         return self._handle_response(response)
 
     @_requires_auth
-    def filter_current_user(self) -> Dict[str, Any]:
+    def filter_current_user(self) -> dict[str, Any]:
         """Create a query to find encounters assigned to the current user.
 
         Returns:

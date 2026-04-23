@@ -4,11 +4,11 @@ This module provides convenient functions for building OpenSearch/Elasticsearch
 queries without needing to know the query DSL syntax.
 """
 
-from typing import Optional, Union, Dict, Any
 from datetime import date
+from typing import Any
 
 
-def match_all() -> Dict[str, Any]:
+def match_all() -> dict[str, Any]:
     """Create a query that matches all documents.
 
     Returns:
@@ -20,7 +20,7 @@ def match_all() -> Dict[str, Any]:
     return {'match_all': {}}
 
 
-def filter_by_sex(sex: str) -> Dict[str, Any]:
+def filter_by_sex(sex: str) -> dict[str, Any]:
     """Create a query to filter by sex.
 
     Args:
@@ -36,7 +36,7 @@ def filter_by_sex(sex: str) -> Dict[str, Any]:
     }
 
 
-def filter_by_species(species: str, genus: Optional[str] = None) -> Dict[str, Any]:
+def filter_by_species(species: str, genus: str | None = None) -> dict[str, Any]:
     """Create a query to filter by species.
 
     Searches across the taxonomy, genus, and specificEpithet fields
@@ -102,7 +102,7 @@ def filter_by_species(species: str, genus: Optional[str] = None) -> Dict[str, An
         }
 
 
-def filter_by_year_range(start_year: Optional[int] = None, end_year: Optional[int] = None) -> Dict[str, Any]:
+def filter_by_year_range(start_year: int | None = None, end_year: int | None = None) -> dict[str, Any]:
     """Create a query to filter by year range.
 
     Args:
@@ -116,7 +116,7 @@ def filter_by_year_range(start_year: Optional[int] = None, end_year: Optional[in
         >>> query = filter_by_year_range(2020, 2023)
         >>> results = client.search_encounters(query)
     """
-    range_query: Dict[str, Any] = {}
+    range_query: dict[str, Any] = {}
     if start_year is not None:
         range_query['gte'] = start_year
     if end_year is not None:
@@ -130,9 +130,9 @@ def filter_by_year_range(start_year: Optional[int] = None, end_year: Optional[in
 
 
 def filter_by_date_range(
-    start_date: Optional[Union[str, date]] = None,
-    end_date: Optional[Union[str, date]] = None
-) -> Dict[str, Any]:
+    start_date: str | date | None = None,
+    end_date: str | date | None = None
+) -> dict[str, Any]:
     """Create a query to filter by date range.
 
     Dates are formatted as ISO 8601 timestamps in UTC. The start date is
@@ -155,7 +155,7 @@ def filter_by_date_range(
         >>> # Encounters between two dates
         >>> query = filter_by_date_range(start_date='2025-11-01', end_date='2025-12-01')
     """
-    range_query: Dict[str, Any] = {}
+    range_query: dict[str, Any] = {}
 
     if start_date is not None:
         if isinstance(start_date, str):
@@ -175,13 +175,13 @@ def filter_by_date_range(
 
 
 def filter_by_location(
-    country: Optional[str] = None,
-    location_id: Optional[str] = None,
-    min_lat: Optional[float] = None,
-    max_lat: Optional[float] = None,
-    min_lon: Optional[float] = None,
-    max_lon: Optional[float] = None
-) -> Dict[str, Any]:
+    country: str | None = None,
+    location_id: str | None = None,
+    min_lat: float | None = None,
+    max_lat: float | None = None,
+    min_lon: float | None = None,
+    max_lon: float | None = None
+) -> dict[str, Any]:
     """Create a query to filter by location.
 
     Args:
@@ -249,7 +249,7 @@ def filter_by_location(
         }
 
 
-def combine_queries(*queries: Dict[str, Any], operator: str = 'must') -> Dict[str, Any]:
+def combine_queries(*queries: dict[str, Any], operator: str = 'must') -> dict[str, Any]:
     """Combine multiple queries using boolean logic.
 
     Args:
@@ -283,7 +283,7 @@ def combine_queries(*queries: Dict[str, Any], operator: str = 'must') -> Dict[st
     }
 
 
-def filter_by_individual(individual_id: str) -> Dict[str, Any]:
+def filter_by_individual(individual_id: str) -> dict[str, Any]:
     """Create a query to find all encounters for a specific individual.
 
     Args:
@@ -303,7 +303,7 @@ def filter_by_individual(individual_id: str) -> Dict[str, Any]:
     }
 
 
-def text_search(field: str, text: str, fuzzy: bool = False) -> Dict[str, Any]:
+def text_search(field: str, text: str, fuzzy: bool = False) -> dict[str, Any]:
     """Create a text search query.
 
     Args:
@@ -335,7 +335,7 @@ def text_search(field: str, text: str, fuzzy: bool = False) -> Dict[str, Any]:
         }
 
 
-def filter_by_submitter(submitter_id: str) -> Dict[str, Any]:
+def filter_by_submitter(submitter_id: str) -> dict[str, Any]:
     """Create a query to find encounters submitted by a specific user.
 
     Args:
@@ -355,7 +355,7 @@ def filter_by_submitter(submitter_id: str) -> Dict[str, Any]:
     }
 
 
-def exists(field: str) -> Dict[str, Any]:
+def exists(field: str) -> dict[str, Any]:
     """Create a query to find documents where a field exists and has a value.
 
     Args:
@@ -376,7 +376,7 @@ def exists(field: str) -> Dict[str, Any]:
     }
 
 
-def missing(field: str) -> Dict[str, Any]:
+def missing(field: str) -> dict[str, Any]:
     """Create a query to find documents where a field is missing or null.
 
     Args:
