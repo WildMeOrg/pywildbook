@@ -24,3 +24,8 @@ htmlcov/
 
 # macos
 .DS_Store
+
+# robots
+GEMINI.md
+CLAUDE.md
+.claude

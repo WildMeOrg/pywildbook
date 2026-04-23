@@ -4,7 +4,8 @@ This module provides convenient functions for building OpenSearch/Elasticsearch
 queries without needing to know the query DSL syntax.
 """
 
-from datetime import date
+import warnings
+from datetime import date, datetime
 from typing import Any
 
 
@@ -140,10 +141,10 @@ def filter_by_date_range(
     as the end of that day (23:59:59Z).
 
     Args:
-        start_date: Earliest date (inclusive). Accepts a date object or a
-            string in 'YYYY-MM-DD' format (optional).
-        end_date: Latest date (inclusive). Accepts a date object or a
-            string in 'YYYY-MM-DD' format (optional).
+        start_date: Earliest date (inclusive). Accepts a date or datetime
+            object or a string in 'YYYY-MM-DD' format (optional).
+        end_date: Latest date (inclusive). Accepts a date or datetime
+            object or a string in 'YYYY-MM-DD' format (optional).
 
     Returns:
         Query dictionary
@@ -160,11 +161,15 @@ def filter_by_date_range(
     if start_date is not None:
         if isinstance(start_date, str):
             start_date = date.fromisoformat(start_date)
+        elif isinstance(start_date, datetime):
+            start_date = start_date.date()
         range_query['gte'] = f'{start_date.isoformat()}T00:00:00Z'
 
     if end_date is not None:
         if isinstance(end_date, str):
             end_date = date.fromisoformat(end_date)
+        elif isinstance(end_date, datetime):
+            end_date = end_date.date()
         range_query['lte'] = f'{end_date.isoformat()}T23:59:59Z'
 
     return {
@@ -273,7 +278,10 @@ def combine_queries(*queries: dict[str, Any], operator: str = 'must') -> dict[st
 
     if not queries:
         return match_all()
-    elif len(queries) == 1:
+
+    # If only one query and operator is 'must', we can return it directly.
+    # Otherwise (must_not, should), we need the bool wrapper.
+    if len(queries) == 1 and operator == 'must':
         return queries[0]
 
     return {
@@ -401,13 +409,11 @@ def field_missing(field: str) -> dict[str, Any]:
 
 def exists(field: str) -> dict[str, Any]:
     """Deprecated: use field_exists() instead."""
-    import warnings
     warnings.warn("exists() is deprecated, use field_exists() instead", DeprecationWarning, stacklevel=2)
     return field_exists(field)
 
 
 def missing(field: str) -> dict[str, Any]:
     """Deprecated: use field_missing() instead."""
-    import warnings
     warnings.warn("missing() is deprecated, use field_missing() instead", DeprecationWarning, stacklevel=2)
     return field_missing(field)

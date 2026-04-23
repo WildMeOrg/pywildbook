@@ -326,16 +326,20 @@ class TestCombineQueries:
         assert 'must_not' in query['bool']
         assert len(query['bool']['must_not']) == 2
 
-    def test_combine_queries_single_returns_unchanged(self):
-        """Test that single query is returned unchanged regardless of operator."""
+    def test_combine_queries_single(self):
+        """Test that single query behavior depends on operator."""
         sex_query = filter_by_sex('female')
 
-        # Single query should return unchanged, operator is ignored
+        # Single query with 'must' should return unchanged
         query = combine_queries(sex_query, operator='must')
         assert query == sex_query
 
+        # Single query with 'should' or 'must_not' should be wrapped in bool
         query = combine_queries(sex_query, operator='should')
-        assert query == sex_query
+        assert query == {'bool': {'should': [sex_query]}}
+
+        query = combine_queries(sex_query, operator='must_not')
+        assert query == {'bool': {'must_not': [sex_query]}}
 
     def test_combine_queries_invalid_operator_raises(self):
         """Invalid operator raises ValueError."""

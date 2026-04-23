@@ -26,6 +26,8 @@ API_ENCOUNTERS_BASE = '/api/v3/encounters/'
 API_SEARCH_INDIVIDUAL = '/api/v3/search/individual'
 API_INDIVIDUALS_BASE = '/api/v3/individuals/'
 
+DEFAULT_TIMEOUT = 30  # seconds
+
 
 def _requires_auth(func):
     """Decorator to ensure that a method is called on an authenticated client."""
@@ -115,8 +117,12 @@ class WildbookClient:
         elif response.status_code == 404:
             raise NotFoundError("Resource not found")
         elif response.status_code == 400:
+            # Handle list of errors or single error message
             errors = data.get('errors', [])
-            error_msg = ', '.join([e.get('message', str(e)) for e in errors]) if errors else 'Bad request'
+            if isinstance(errors, list) and errors:
+                error_msg = ', '.join([e.get('message', str(e)) if isinstance(e, dict) else str(e) for e in errors])
+            else:
+                error_msg = data.get('error', data.get('message', 'Bad request'))
             raise BadRequestError(f"Bad request: {error_msg}")
         else:
             error_msg = data.get('error', f'HTTP {response.status_code}')
@@ -142,8 +148,10 @@ class WildbookClient:
             >>> client.login()
             {'success': True, 'id': '...', 'username': 'user@example.com', ...}
         """
-        username = username or os.environ.get('WILDBOOK_USERNAME')
-        password = password or os.environ.get('WILDBOOK_PASSWORD')
+        if username is None:
+            username = os.environ.get('WILDBOOK_USERNAME')
+        if password is None:
+            password = os.environ.get('WILDBOOK_PASSWORD')
 
         if not username:
             raise AuthenticationError("Username not provided and WILDBOOK_USERNAME environment variable not set.")
@@ -156,7 +164,7 @@ class WildbookClient:
             'password': password
         }
 
-        response = self.session.post(url, json=payload)
+        response = self.session.post(url, json=payload, timeout=DEFAULT_TIMEOUT)
         data = self._handle_response(response)
 
         if data.get('success'):
@@ -179,7 +187,7 @@ class WildbookClient:
         url = self._make_url(API_LOGOUT)
 
         try:
-            response = self.session.post(url)
+            response = self.session.post(url, timeout=DEFAULT_TIMEOUT)
             data = self._handle_response(response)
             self._authenticated = False
             self._user_info = None
@@ -213,7 +221,7 @@ class WildbookClient:
             >>> print(user['username'])
         """
         url = self._make_url(API_USER)
-        response = self.session.get(url)
+        response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
     @_requires_auth
@@ -231,7 +239,7 @@ class WildbookClient:
             >>> print(home['latestEncounters'])
         """
         url = self._make_url(API_HOME)
-        response = self.session.get(url)
+        response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
     @_requires_auth
@@ -261,7 +269,7 @@ class WildbookClient:
         else:
             search_body = query
 
-        response = self.session.post(url, json=search_body, params=params)
+        response = self.session.post(url, json=search_body, params=params, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
     def search_encounters(
@@ -330,7 +338,7 @@ class WildbookClient:
             >>> encounter = client.get_encounter('123e4567-e89b-12d3-a456-426614174000')
         """
         url = self._make_url(f'{API_ENCOUNTERS_BASE}{encounter_id}')
-        response = self.session.get(url)
+        response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
     def search_individuals(
@@ -380,7 +388,7 @@ class WildbookClient:
             NotFoundError: If individual doesn't exist
         """
         url = self._make_url(f'{API_INDIVIDUALS_BASE}{individual_id}')
-        response = self.session.get(url)
+        response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
     @_requires_auth
