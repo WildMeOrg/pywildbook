@@ -331,7 +331,7 @@ See the `examples/` directory for complete examples:
 
 - `basic_usage.py` - Basic login, search, and logout
 - `advanced_search.py` - Complex queries, pagination, and filtering
-- `encounter_map.ipynb` - Plot encounter locations on an interactive map (requires `ipyleaflet`)
+- `encounter_map.ipynb` - Plot encounter locations on an interactive map
 - `individual_statistics.ipynb` - Analyze individual encounter patterns and statistics
 
 Run examples:
@@ -348,10 +348,10 @@ uv run python examples/basic_usage.py
 # Run advanced example
 uv run python examples/advanced_search.py
 
-# Open a notebook (install ipyleaflet for encounter_map.ipynb)
-uv pip install ipyleaflet
-jupyter notebook examples/encounter_map.ipynb
-jupyter notebook examples/individual_statistics.ipynb
+# Install notebook dependencies, then open a notebook
+uv sync --extra notebook
+uv run jupyter notebook examples/encounter_map.ipynb
+uv run jupyter notebook examples/individual_statistics.ipynb
 ```
 
 ## Development
@@ -409,8 +409,18 @@ Main client class for interacting with Wildbook.
 
 ## Requirements
 
-- Python >= 3.9
+- Python >= 3.11
 - requests >= 2.31.0
+
+### Optional: notebook extras
+
+The `encounter_map.ipynb` and `individual_statistics.ipynb` examples require additional dependencies. Install with:
+
+```bash
+uv sync --extra notebook
+```
+
+This adds `ipykernel`, `ipyleaflet`, and `python-dotenv`.
 
 ## License
 [MIT License](LICENSE.md)
