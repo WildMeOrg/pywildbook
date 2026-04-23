@@ -265,6 +265,12 @@ def combine_queries(*queries: Dict[str, Any], operator: str = 'must') -> Dict[st
         >>> combined = combine_queries(sex_query, year_query, operator='must')
         >>> results = client.search_encounters(combined)
     """
+    _VALID_OPERATORS = {'must', 'should', 'must_not'}
+    if operator not in _VALID_OPERATORS:
+        raise ValueError(
+            f"Invalid operator {operator!r}. Must be one of: {sorted(_VALID_OPERATORS)}"
+        )
+
     if not queries:
         return match_all()
     elif len(queries) == 1:

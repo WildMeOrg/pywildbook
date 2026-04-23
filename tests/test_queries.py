@@ -323,6 +323,19 @@ class TestCombineQueries:
         query = combine_queries(sex_query, operator='should')
         assert query == sex_query
 
+    def test_combine_queries_invalid_operator_raises(self):
+        """Invalid operator raises ValueError."""
+        with pytest.raises(ValueError, match="operator"):
+            combine_queries(filter_by_sex('female'), filter_by_sex('male'), operator='filter')
+
+    def test_combine_queries_all_valid_operators_accepted(self):
+        """All three valid operators are accepted without error."""
+        q1 = filter_by_sex('female')
+        q2 = filter_by_sex('male')
+        combine_queries(q1, q2, operator='must')
+        combine_queries(q1, q2, operator='should')
+        combine_queries(q1, q2, operator='must_not')
+
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
