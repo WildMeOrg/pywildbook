@@ -795,10 +795,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "pytest-cov" },
-]
 notebook = [
     { name = "ipykernel" },
     { name = "ipyleaflet" },
@@ -807,6 +803,8 @@ notebook = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
     { name = "ruff" },
 ]
 
@@ -814,15 +812,17 @@ dev = [
 requires-dist = [
     { name = "ipykernel", marker = "extra == 'notebook'", specifier = ">=6.31.0" },
     { name = "ipyleaflet", marker = "extra == 'notebook'", specifier = ">=0.20.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "python-dotenv", marker = "extra == 'notebook'", specifier = ">=1.0.0" },
     { name = "requests", specifier = ">=2.31.0" },
 ]
-provides-extras = ["notebook", "dev"]
+provides-extras = ["notebook"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "ruff", specifier = ">=0.15.11" }]
+dev = [
+    { name = "pytest", specifier = ">=7.0.0" },
+    { name = "pytest-cov", specifier = ">=4.0.0" },
+    { name = "ruff", specifier = ">=0.15.11" },
+]
 
 [[package]]
 name = "pyzmq"
