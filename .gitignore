@@ -19,5 +19,8 @@ wheels/
 htmlcov/
 .coverage
 
+# jupyter
+.ipynb_checkpoints/
+
 # macos
 .DS_Store
