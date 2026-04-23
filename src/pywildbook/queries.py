@@ -355,7 +355,7 @@ def filter_by_submitter(submitter_id: str) -> dict[str, Any]:
     }
 
 
-def exists(field: str) -> dict[str, Any]:
+def field_exists(field: str) -> dict[str, Any]:
     """Create a query to find documents where a field exists and has a value.
 
     Args:
@@ -366,7 +366,7 @@ def exists(field: str) -> dict[str, Any]:
 
     Example:
         >>> # Find encounters with an assigned individual
-        >>> query = exists('individualId')
+        >>> query = field_exists('individualId')
         >>> results = client.search_encounters(query)
     """
     return {
@@ -376,7 +376,7 @@ def exists(field: str) -> dict[str, Any]:
     }
 
 
-def missing(field: str) -> dict[str, Any]:
+def field_missing(field: str) -> dict[str, Any]:
     """Create a query to find documents where a field is missing or null.
 
     Args:
@@ -387,13 +387,27 @@ def missing(field: str) -> dict[str, Any]:
 
     Example:
         >>> # Find encounters without an assigned individual
-        >>> query = missing('individualId')
+        >>> query = field_missing('individualId')
         >>> unassigned = client.search_encounters(query)
     """
     return {
         'bool': {
             'must_not': [
-                exists(field)
+                field_exists(field)
             ]
         }
     }
+
+
+def exists(field: str) -> dict[str, Any]:
+    """Deprecated: use field_exists() instead."""
+    import warnings
+    warnings.warn("exists() is deprecated, use field_exists() instead", DeprecationWarning, stacklevel=2)
+    return field_exists(field)
+
+
+def missing(field: str) -> dict[str, Any]:
+    """Deprecated: use field_missing() instead."""
+    import warnings
+    warnings.warn("missing() is deprecated, use field_missing() instead", DeprecationWarning, stacklevel=2)
+    return field_missing(field)

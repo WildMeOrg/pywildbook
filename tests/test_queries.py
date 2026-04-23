@@ -11,6 +11,8 @@ from pywildbook.queries import (
     filter_by_individual,
     filter_by_submitter,
     text_search,
+    field_exists,
+    field_missing,
     exists,
     missing,
     combine_queries
@@ -252,17 +254,29 @@ class TestTextSearch:
 class TestExistenceQueries:
     """Test field existence queries."""
 
-    def test_exists(self):
-        """Test exists query."""
-        query = exists('individualId')
+    def test_field_exists(self):
+        """Test field_exists query."""
+        query = field_exists('individualId')
         assert query == {'exists': {'field': 'individualId'}}
 
-    def test_missing(self):
-        """Test missing query."""
-        query = missing('individualId')
+    def test_field_missing(self):
+        """Test field_missing query."""
+        query = field_missing('individualId')
         assert 'bool' in query
         assert 'must_not' in query['bool']
         assert query['bool']['must_not'] == [{'exists': {'field': 'individualId'}}]
+
+    def test_exists_is_deprecated(self):
+        """exists() emits DeprecationWarning and returns the same result."""
+        with pytest.warns(DeprecationWarning, match="field_exists"):
+            query = exists('individualId')
+        assert query == field_exists('individualId')
+
+    def test_missing_is_deprecated(self):
+        """missing() emits DeprecationWarning and returns the same result."""
+        with pytest.warns(DeprecationWarning, match="field_missing"):
+            query = missing('individualId')
+        assert query == field_missing('individualId')
 
 
 class TestCombineQueries:

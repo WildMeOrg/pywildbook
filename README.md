@@ -200,10 +200,10 @@ results = client.search_encounters(query)
 ### Finding Unassigned Encounters
 
 ```python
-from pywildbook.queries import missing
+from pywildbook.queries import field_missing
 
 # Encounters without an assigned individual
-query = missing('individualId')
+query = field_missing('individualId')
 unassigned = client.search_encounters(query)
 ```
 
@@ -220,10 +220,10 @@ results = client.search_encounters(query)
 ## Searching Individuals
 
 ```python
-from pywildbook.queries import exists
+from pywildbook.queries import field_exists
 
 # Find individuals with encounters
-query = exists('encounters')
+query = field_exists('encounters')
 results = client.search_individuals(query, size=20)
 
 for individual in results['hits']:
@@ -266,8 +266,8 @@ The `pywildbook.queries` module provides these helper functions:
 - `filter_by_individual(individual_id)` - Find encounters for an individual
 - `filter_by_submitter(submitter_id)` - Filter by submitter
 - `text_search(field, text, fuzzy=False)` - Text search in a field
-- `exists(field)` - Find documents where field exists
-- `missing(field)` - Find documents where field is missing
+- `field_exists(field)` - Find documents where field exists
+- `field_missing(field)` - Find documents where field is missing
 - `combine_queries(*queries, operator='must')` - Combine multiple queries with AND/OR/NOT logic
 
 ## Custom Queries
