@@ -6,20 +6,26 @@ readme = "README.md"
 authors = [
     { name = "vkirkl", email = "georgetownpolecat@gmail.com" }
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dependencies = [
-    "ipykernel>=6.31.0",
     "requests>=2.31.0",
-    "python-dotenv>=1.2.1"
 ]
 
 [project.optional-dependencies]
+notebook = [
+    "ipykernel>=6.31.0",
+    "ipyleaflet>=0.20.0",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-    "ipyleaflet>=0.20.0"
 ]
 
 [build-system]
 requires = ["uv_build>=0.9.15,<0.10.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.11",
+]
