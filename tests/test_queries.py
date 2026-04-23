@@ -326,7 +326,7 @@ class TestCombineQueries:
         assert 'must_not' in query['bool']
         assert len(query['bool']['must_not']) == 2
 
-    def test_combine_queries_single(self):
+    def test_combine_queries_single_operator_wrapping(self):
         """Test that single query behavior depends on operator."""
         sex_query = filter_by_sex('female')
 
