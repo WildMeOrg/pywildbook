@@ -213,7 +213,15 @@ def filter_by_location(
     if location_id:
         filters.append({'term': {'locationId': location_id}})
 
-    if all(v is not None for v in [min_lat, max_lat, min_lon, max_lon]):
+    bbox_params = {'min_lat': min_lat, 'max_lat': max_lat, 'min_lon': min_lon, 'max_lon': max_lon}
+    bbox_provided = [k for k, v in bbox_params.items() if v is not None]
+    if 0 < len(bbox_provided) < 4:
+        missing = [k for k in bbox_params if k not in bbox_provided]
+        raise ValueError(
+            f"Incomplete bounding box: provided {bbox_provided}, missing {missing}. "
+            "Supply all four of min_lat, max_lat, min_lon, max_lon."
+        )
+    if len(bbox_provided) == 4:
         filters.append({
             'geo_bounding_box': {
                 'locationGeoPoint': {

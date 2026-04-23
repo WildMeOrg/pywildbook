@@ -217,6 +217,21 @@ class TestLocationQueries:
         query = filter_by_location()
         assert query == match_all()
 
+    def test_filter_by_location_partial_bbox_lat_only_raises(self):
+        """Partial bbox with only lat params raises ValueError."""
+        with pytest.raises(ValueError, match="bounding box"):
+            filter_by_location(min_lat=-5.0, max_lat=5.0)
+
+    def test_filter_by_location_partial_bbox_lon_only_raises(self):
+        """Partial bbox with only lon params raises ValueError."""
+        with pytest.raises(ValueError, match="bounding box"):
+            filter_by_location(min_lon=35.0, max_lon=42.0)
+
+    def test_filter_by_location_partial_bbox_one_param_raises(self):
+        """Single bbox param raises ValueError."""
+        with pytest.raises(ValueError, match="bounding box"):
+            filter_by_location(min_lat=-5.0)
+
 
 class TestTextSearch:
     """Test text search queries."""
