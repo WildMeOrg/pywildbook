@@ -354,6 +354,9 @@ uv run jupyter notebook examples/individual_statistics.ipynb
 
 ## Development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contributor workflow, coding
+conventions, tests, and pull request guidance.
+
 ### Setting up the development environment
 
 ```bash
