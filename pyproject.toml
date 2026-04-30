@@ -3,13 +3,36 @@ name = "pywildbook"
 version = "1.0.0"
 description = "Python client for the Wildbook v3 API"
 readme = "README.md"
+license = "MIT"
 authors = [
-    { name = "vkirkl", email = "georgetownpolecat@gmail.com" }
+    { name = "Kirk Larsen", email = "georgetownpolecat@gmail.com" },
+    { name = "Wild Me", email = "info@wildme.org" },
+]
+keywords = ["wildbook", "wildlife", "conservation", "api", "client"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 requires-python = ">=3.11"
 dependencies = [
     "requests>=2.31.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/WildMeOrg/pywildbook"
+Repository = "https://github.com/WildMeOrg/pywildbook"
+"Bug Tracker" = "https://github.com/WildMeOrg/pywildbook/issues"
+Documentation = "https://docs.wildme.org/"
 
 [project.optional-dependencies]
 notebook = [
