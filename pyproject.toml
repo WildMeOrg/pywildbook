@@ -1,6 +1,6 @@
 [project]
 name = "pywildbook"
-version = "1.0.0"
+version = "1.0.1"
 description = "Python client for the Wildbook v3 API"
 readme = "README.md"
 license = "MIT"

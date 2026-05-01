@@ -7,14 +7,13 @@ A Python client library for interacting with the Wildbook v3 API. This package p
 ### Using uv (recommended)
 
 ```bash
-cd pywildbook
-uv sync
+uv add pywildbook
 ```
 
 ### Using pip
 
 ```bash
-pip install -e .
+pip install pywildbook
 ```
 
 ## Quick Start
@@ -37,7 +36,7 @@ results = client.search_encounters(match_all(), size=10)
 
 # Print results
 for encounter in results['hits']:
-    print(f"{encounter['id']}: {encounter['genus']} {encounter.get('specificEpithet', '')}")
+    print(f"{encounter['id']}: {encounter.get('genus', '')} {encounter.get('specificEpithet', '')}")
 
 # Logout when done
 client.logout()
@@ -248,8 +247,8 @@ print(individual)
 # Get dashboard data for the current user
 dashboard = client.get_user_home()
 
-print(f"Latest encounters: {dashboard['latestEncounters']}")
-print(f"Projects: {dashboard['projects']}")
+print(f"Latest encounters: {dashboard.get('latestEncounters')}")
+print(f"Projects: {dashboard.get('projects')}")
 print(f"Latest bulk import: {dashboard.get('latestBulkImportTask')}")
 ```
 
@@ -315,6 +314,7 @@ except AuthenticationError as e:
 
 try:
     # Trying to search without logging in
+    from pywildbook.queries import match_all
     results = client.search_encounters(match_all())
 except NotAuthenticatedError as e:
     print(f"Not authenticated: {e}")
@@ -425,13 +425,13 @@ Main client class for interacting with Wildbook.
 
 ### Optional: notebook extras
 
-The `encounter_map.ipynb` and `individual_statistics.ipynb` examples require additional dependencies. Install with:
+The `individual_statistics.ipynb` example requires additional dependencies. Install with:
 
 ```bash
 uv sync --extra notebook
 ```
 
-This adds `ipykernel`, `ipyleaflet`, and `python-dotenv`.
+This adds `ipykernel`, `ipyleaflet`, `notebook`, and `python-dotenv`.
 
 ## License
 [MIT License](LICENSE.md)
