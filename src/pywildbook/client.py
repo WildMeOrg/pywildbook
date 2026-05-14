@@ -25,6 +25,8 @@ API_SEARCH_ENCOUNTER = '/api/v3/search/encounter'
 API_ENCOUNTERS_BASE = '/api/v3/encounters/'
 API_SEARCH_INDIVIDUAL = '/api/v3/search/individual'
 API_INDIVIDUALS_BASE = '/api/v3/individuals/'
+API_SEARCH_OCCURRENCE = '/api/v3/search/occurrence'
+API_OCCURRENCES_BASE = '/api/v3/occurrences/'
 
 DEFAULT_TIMEOUT = 30  # seconds
 
@@ -338,6 +340,68 @@ class WildbookClient:
             >>> encounter = client.get_encounter('123e4567-e89b-12d3-a456-426614174000')
         """
         url = self._make_url(f'{API_ENCOUNTERS_BASE}{encounter_id}')
+        response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
+        return self._handle_response(response)
+
+    def search_occurrences(
+        self,
+        query: dict[str, Any],
+        from_: int = 0,
+        size: int = 10,
+        sort: str | None = None,
+        sort_order: str | None = None
+    ) -> dict[str, Any]:
+        """Search for occurrences using OpenSearch/Elasticsearch query syntax.
+
+        Args:
+            query: OpenSearch query dictionary (e.g., {'match_all': {}})
+            from_: Pagination offset (default: 0)
+            size: Number of results to return (default: 10)
+            sort: Field to sort by (optional)
+            sort_order: Sort order 'asc' or 'desc' (optional)
+
+        Returns:
+            Search results with hits array and metadata. Each hit includes fields
+            such as sightingPlatform, fieldSurveyCode, groupComposition,
+            groupBehavior, numAdults, numJuveniles, numCalves, transect fields,
+            and comments.
+
+        Raises:
+            NotAuthenticatedError: If not logged in
+            BadRequestError: If query is invalid
+
+        Example:
+            >>> results = client.search_occurrences({'match_all': {}})
+            >>> for occ in results.get('hits', []):
+            ...     print(occ['id'], occ.get('sightingPlatform'))
+        """
+        return self._search(
+            API_SEARCH_OCCURRENCE,
+            query,
+            from_,
+            size,
+            sort,
+            sort_order
+        )
+
+    @_requires_auth
+    def get_occurrence(self, occurrence_id: str) -> dict[str, Any]:
+        """Get details of a specific occurrence by UUID.
+
+        Args:
+            occurrence_id: Occurrence UUID
+
+        Returns:
+            Occurrence details dictionary
+
+        Raises:
+            NotAuthenticatedError: If not logged in
+            NotFoundError: If occurrence doesn't exist
+
+        Example:
+            >>> occurrence = client.get_occurrence('123e4567-e89b-12d3-a456-426614174000')
+        """
+        url = self._make_url(f'{API_OCCURRENCES_BASE}{occurrence_id}')
         response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
