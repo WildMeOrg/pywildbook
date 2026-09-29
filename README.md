@@ -1,6 +1,6 @@
 # pywildbook
 
-A Python client library for interacting with the Wildbook v3 API. This package provides an interface for authenticating with Wildbook instances and searching for wildlife encounters, individuals, and other data.
+A Python client library for interacting with the Wildbook v3 API. This package provides an interface for authenticating with Wildbook instances and searching for wildlife encounters, individuals, sightings, and other data.
 
 ## Installation
 
@@ -229,6 +229,22 @@ for individual in results['hits']:
     print(f"{individual['id']}: {individual.get('displayName', 'Unnamed')}")
 ```
 
+## Searching Sightings
+
+```python
+from pywildbook.queries import match_all, text_search
+
+# Find all sightings
+results = client.search_sightings(match_all(), size=20)
+
+for sighting in results['hits']:
+    print(f"{sighting['id']}: {sighting.get('fieldSurveyCode', 'N/A')}")
+
+# Find sightings from a specific field survey
+query = text_search('fieldSurveyCode', 'SLNP-2026-03')
+results = client.search_sightings(query)
+```
+
 ## Getting Specific Records
 
 ```python
@@ -239,6 +255,10 @@ print(encounter)
 # Get a specific individual by UUID
 individual = client.get_individual('987fcdeb-51a2-43f7-9876-543210fedcba')
 print(individual)
+
+# Get a specific sighting by UUID
+sighting = client.get_sighting('456e7890-e12b-34d5-a678-901234567def')
+print(sighting)
 ```
 
 ## User Dashboard

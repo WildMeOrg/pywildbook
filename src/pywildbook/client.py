@@ -25,6 +25,8 @@ API_SEARCH_ENCOUNTER = '/api/v3/search/encounter'
 API_ENCOUNTERS_BASE = '/api/v3/encounters/'
 API_SEARCH_INDIVIDUAL = '/api/v3/search/individual'
 API_INDIVIDUALS_BASE = '/api/v3/individuals/'
+API_SEARCH_OCCURRENCE = '/api/v3/search/occurrence'
+API_OCCURRENCES_BASE = '/api/v3/occurrences/'
 
 DEFAULT_TIMEOUT = 30  # seconds
 
@@ -338,6 +340,78 @@ class WildbookClient:
             >>> encounter = client.get_encounter('123e4567-e89b-12d3-a456-426614174000')
         """
         url = self._make_url(f'{API_ENCOUNTERS_BASE}{encounter_id}')
+        response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
+        return self._handle_response(response)
+
+    def search_sightings(
+        self,
+        query: dict[str, Any],
+        from_: int = 0,
+        size: int = 10,
+        sort: str | None = None,
+        sort_order: str | None = None
+    ) -> dict[str, Any]:
+        """Search for sightings using OpenSearch/Elasticsearch query syntax.
+
+        Note: this calls the `/search/occurrence` endpoint. "Occurrence" is
+        the underlying Wildbook API/data-model term; "sighting" is the
+        current user-facing term, which this client's public method names
+        follow.
+
+        Args:
+            query: OpenSearch query dictionary (e.g., {'match_all': {}})
+            from_: Pagination offset (default: 0)
+            size: Number of results to return (default: 10)
+            sort: Field to sort by (optional)
+            sort_order: Sort order 'asc' or 'desc' (optional)
+
+        Returns:
+            Search results with hits array and metadata. Each hit includes fields
+            such as sightingPlatform, fieldSurveyCode, groupComposition,
+            groupBehavior, numAdults, numJuveniles, numCalves, transect fields,
+            and comments.
+
+        Raises:
+            NotAuthenticatedError: If not logged in
+            BadRequestError: If query is invalid
+
+        Example:
+            >>> results = client.search_sightings({'match_all': {}})
+            >>> for sighting in results.get('hits', []):
+            ...     print(sighting['id'], sighting.get('sightingPlatform'))
+        """
+        return self._search(
+            API_SEARCH_OCCURRENCE,
+            query,
+            from_,
+            size,
+            sort,
+            sort_order
+        )
+
+    @_requires_auth
+    def get_sighting(self, sighting_id: str) -> dict[str, Any]:
+        """Get details of a specific sighting by UUID.
+
+        Note: this calls the `/occurrences/{id}` endpoint. "Occurrence" is
+        the underlying Wildbook API/data-model term; "sighting" is the
+        current user-facing term, which this client's public method names
+        follow.
+
+        Args:
+            sighting_id: Sighting UUID
+
+        Returns:
+            Sighting details dictionary
+
+        Raises:
+            NotAuthenticatedError: If not logged in
+            NotFoundError: If sighting doesn't exist
+
+        Example:
+            >>> sighting = client.get_sighting('123e4567-e89b-12d3-a456-426614174000')
+        """
+        url = self._make_url(f'{API_OCCURRENCES_BASE}{sighting_id}')
         response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
