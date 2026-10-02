@@ -37,11 +37,9 @@
   - Prefer a lightweight CI job or scheduled workflow only if the output is actionable.
   - If audit noise is mostly notebook extras, document how to run focused runtime audits rather than blocking normal CI on optional dependencies.
 
-- [ ] Verify dependency changes.
-  - `uv sync`
-  - `uv run pytest`
-  - `uv run ruff check`
-  - `uv audit` after the lockfile is updated
+- [x] Check whether dependency changes require verification.
+  - No dependency updates were applied in task 1, so there is no lockfile change to sync or audit.
+  - The test and lint commands were run during task 4.
 
 ### Task 1 Findings (2026-10-02)
 
@@ -130,16 +128,23 @@
 
 **Purpose:** Confirm the dependency and test changes do not break the package.
 
-- [ ] Run the full test suite.
+- [x] Run the full test suite.
   - `uv run pytest`
 
-- [ ] Run linting.
+- [x] Run linting.
   - `uv run ruff check`
 
-- [ ] If dependency files changed, run audit again and record the result.
-  - `uv audit`
+- [x] Check whether dependency files changed and an audit rerun is needed.
+  - No dependency files changed in this plan; no audit rerun was needed.
 
-- [ ] Review `git diff` for unrelated churn, especially in `uv.lock`.
+- [x] Review `git diff` for unrelated churn, especially in `uv.lock`.
+  - The worktree diff was clean; `uv.lock` is unchanged.
+
+### Task 4 Findings (2026-10-02)
+
+- `uv run pytest`: 66 passed.
+- `uv run ruff check`: all checks passed.
+- `git diff --check` passed, and no dependency-file or unrelated diff was present.
 
 ---
 
