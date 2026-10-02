@@ -274,6 +274,7 @@ class WildbookClient:
         response = self.session.post(url, json=search_body, params=params, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
+    @_requires_auth
     def search_encounters(
         self,
         query: dict[str, Any],
@@ -343,6 +344,7 @@ class WildbookClient:
         response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
+    @_requires_auth
     def search_sightings(
         self,
         query: dict[str, Any],
@@ -415,6 +417,7 @@ class WildbookClient:
         response = self.session.get(url, timeout=DEFAULT_TIMEOUT)
         return self._handle_response(response)
 
+    @_requires_auth
     def search_individuals(
         self,
         query: dict[str, Any],

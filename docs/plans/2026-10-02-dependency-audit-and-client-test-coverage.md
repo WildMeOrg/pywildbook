@@ -1,8 +1,8 @@
 # Dependency Audit and Client Test Coverage Plan
 
-**Goal:** Triage dependency-update noise with a security-first workflow, fix the missing authentication guard on `search_sightings()`, then add focused unit coverage for the sighting and encounter client APIs without requiring a running Wildbook server.
+**Goal:** Triage dependency-update noise with a security-first workflow, enforce authentication at each public search method, then add focused unit coverage for the sighting and encounter client APIs without requiring a running Wildbook server.
 
-**Context:** pywildbook has a small runtime dependency surface (`requests`) and a much larger optional notebook dependency surface. Recent sighting methods were added as user-facing wrappers over the Wildbook occurrence endpoints, but tests do not yet assert their endpoint behavior. `search_sightings()` is also missing the `_requires_auth` decorator used by the other protected client methods, so a `NotAuthenticatedError` test should currently fail and surface a real bug. Encounter methods have similarly thin direct coverage.
+**Context:** pywildbook has a small runtime dependency surface (`requests`) and a much larger optional notebook dependency surface. Recent sighting methods were added as user-facing wrappers over the Wildbook occurrence endpoints, but tests do not yet assert their endpoint behavior. All public search methods delegate to `_search()`, which already enforces authentication, but the public methods lack their own `_requires_auth` guard. Encounter methods have similarly thin direct coverage.
 
 **Out of scope for this plan:** Updating README API Reference entries for `search_sightings()` and `get_sighting()`. Track that as a separate documentation activity so dependency/test work remains focused.
 
@@ -63,16 +63,16 @@
 - `src/pywildbook/client.py`
 - `tests/test_client.py`
 
-- [ ] Add tests for unauthenticated search methods.
+- [x] Add tests for unauthenticated search methods.
   - `search_encounters()` raises `NotAuthenticatedError`.
   - `search_individuals()` raises `NotAuthenticatedError`.
-  - `search_sightings()` raises `NotAuthenticatedError`; this should fail before implementation because `search_sightings()` is currently missing `@_requires_auth`.
+  - `search_sightings()` raises `NotAuthenticatedError`.
 
-- [ ] Fix the `search_sightings()` authentication bug.
-  - Add `@_requires_auth` to `WildbookClient.search_sightings()`.
+- [x] Add direct authentication guards to public search methods.
+  - Add `@_requires_auth` to all three public search methods. Ordinary unauthenticated calls were already rejected by `_search()`; these guards make the contract explicit at each public entry point.
   - Re-run the focused unauthenticated search tests and confirm they pass.
 
-- [ ] Add endpoint and params tests for search methods.
+- [x] Add endpoint and params tests for search methods.
   - `search_encounters()` posts to `/api/v3/search/encounter`.
   - `search_individuals()` posts to `/api/v3/search/individual`.
   - `search_sightings()` posts to `/api/v3/search/occurrence`.
@@ -80,12 +80,18 @@
   - Unwrapped queries are wrapped in `{"query": ...}`.
   - Already wrapped queries are not double-wrapped.
 
-- [ ] Use shared helper setup inside the tests where it keeps the test intent clear.
-  - A helper can build a logged-in client with mocked login and resource responses.
-  - Avoid over-abstracting assertions; endpoint expectations should stay visible.
+- [x] Keep the test setup direct and avoid unnecessary helpers.
+  - The endpoint cases share one parameterized test, so extracting a helper would not reduce meaningful duplication.
+  - Endpoint expectations remain visible in the test.
 
-- [ ] Run focused tests first.
+- [x] Run focused tests first.
   - `uv run pytest tests/test_client.py -v`
+
+### Task 2 Findings (2026-10-02)
+
+- Added explicit authentication checks to `search_encounters()`, `search_individuals()`, and `search_sightings()`. Because the current `_search()` helper already has the decorator, the unauthenticated request was already blocked in normal use; the public-method tests replace that helper to confirm each entry point enforces its own guard.
+- Added parameterized endpoint, wrapped query body, pagination, and sort assertions for all three search methods. Existing tests continue to cover query wrapping and already-wrapped queries.
+- The focused client tests pass (24 tests), the full suite passes (60 tests), and `uv run ruff check` passes.
 
 ---
 
