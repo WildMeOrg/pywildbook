@@ -102,21 +102,27 @@
 **Files likely involved:**
 - `tests/test_client.py`
 
-- [ ] Add unauthenticated access tests.
+- [x] Add unauthenticated access tests.
   - `get_encounter()` raises `NotAuthenticatedError`.
   - `get_individual()` raises `NotAuthenticatedError`.
   - `get_sighting()` raises `NotAuthenticatedError`.
 
-- [ ] Add URL construction tests.
+- [x] Add URL construction tests.
   - `get_encounter("enc-123")` gets `/api/v3/encounters/enc-123`.
   - `get_individual("ind-123")` gets `/api/v3/individuals/ind-123`.
   - `get_sighting("sight-123")` gets `/api/v3/occurrences/sight-123`.
 
-- [ ] Add error propagation tests if useful.
-  - The existing `get_encounter()` 404 test covers `_handle_response`; add `get_sighting()` 404 only if endpoint-specific behavior is worth locking down.
+- [x] Review whether additional error propagation tests are useful.
+  - The existing `get_encounter()` 404 test covers the shared `_handle_response`; no endpoint-specific error test was needed.
 
-- [ ] Run focused tests first.
+- [x] Run focused tests first.
   - `uv run pytest tests/test_client.py -v`
+
+### Task 3 Findings (2026-10-02)
+
+- Added parameterized unauthenticated-access tests for all three resource getters and verified no HTTP GET is issued when authentication is missing.
+- Added parameterized URL and response tests for encounters, individuals, and sightings.
+- The focused tests pass (6 new cases); all client tests pass (30 total), and `uv run ruff check` passes.
 
 ---
 

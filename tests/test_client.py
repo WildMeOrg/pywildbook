@@ -245,6 +245,57 @@ class TestSearchMethods:
         assert sent_body == {'query': {'match_all': {}}}
 
 
+class TestGetResourceMethods:
+    """Test fetching individual resources."""
+
+    @pytest.mark.parametrize(
+        'method_name,resource_id',
+        [
+            ('get_encounter', 'enc-123'),
+            ('get_individual', 'ind-123'),
+            ('get_sighting', 'sight-123'),
+        ],
+    )
+    @patch('pywildbook.client.requests.Session.get')
+    def test_get_resource_methods_require_authentication(
+        self, mock_get, method_name, resource_id
+    ):
+        """Test that resource fetches fail before making an unauthenticated request."""
+        client = WildbookClient('http://localhost:8080')
+
+        with pytest.raises(NotAuthenticatedError):
+            getattr(client, method_name)(resource_id)
+
+        mock_get.assert_not_called()
+
+    @pytest.mark.parametrize(
+        'method_name,resource_id,endpoint',
+        [
+            ('get_encounter', 'enc-123', '/api/v3/encounters/enc-123'),
+            ('get_individual', 'ind-123', '/api/v3/individuals/ind-123'),
+            ('get_sighting', 'sight-123', '/api/v3/occurrences/sight-123'),
+        ],
+    )
+    @patch('pywildbook.client.requests.Session.get')
+    def test_get_resource_methods_request_resource_endpoints(
+        self, mock_get, method_name, resource_id, endpoint
+    ):
+        """Test resource fetches use the expected endpoint and return its data."""
+        response = Mock()
+        response.status_code = 200
+        response.json.return_value = {'id': resource_id}
+        mock_get.return_value = response
+
+        client = WildbookClient('http://localhost:8080')
+        client._authenticated = True
+
+        assert getattr(client, method_name)(resource_id) == {'id': resource_id}
+        mock_get.assert_called_once_with(
+            f'http://localhost:8080{endpoint}',
+            timeout=30,
+        )
+
+
 class TestContextManager:
     """Test context manager functionality."""
 
