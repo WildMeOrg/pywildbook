@@ -11,7 +11,7 @@
 | Risk | Dependencies | Target | Rationale |
 | --- | --- | --- | --- |
 | Low | `requests` | `2.34.2` | Latest patch/minor line target; exercise the client request and response paths. |
-| Low | `idna` | `3.15` | Fixes the reported denial-of-service advisory without a major-version change. |
+| Low | `idna` | `3.20` | Fixes the reported denial-of-service advisory without a major-version change. |
 | Low | `pytest` | `9.0.3` | Fixes the reported advisory while staying on the existing 9.0 line; do not combine with a move to 9.1. |
 | Low | `setuptools` | `84.0.0` | Current release within the existing major version; it is only present through the optional notebook dependency graph. |
 | Low | `anyio` | `4.14.2` | Audit-identified patch-level security target; transitive/optional, with no corresponding Dependabot PR. |
@@ -25,13 +25,22 @@ Risk describes expected change/validation effort, not advisory severity. Priorit
 
 ## Task 1: Runtime Baseline Patches
 
-**Packages:** `requests` to `2.34.2`; `idna` to `3.15`.
+**Packages:** `requests` to `2.34.2`; `idna` to `3.20`.
 
-- [ ] Update the two runtime dependency targets/lock resolutions only.
-- [ ] Review the resulting `uv.lock` diff for unrelated upgrades.
-- [ ] Run the client unit tests and lint checks.
-- [ ] Run the focused runtime audit and confirm these package findings are resolved.
-- [ ] Review client behavior against Requests 2.34.2, including normal session requests and response JSON handling. The project does not currently depend on specialized Requests typing behavior.
+- [x] Update the two runtime dependency targets/lock resolutions only.
+- [x] Review the resulting `uv.lock` diff for unrelated upgrades.
+- [x] Run the client unit tests and lint checks.
+- [x] Run the focused runtime audit and confirm these package findings are resolved.
+- [x] Review client behavior against Requests 2.34.2, including normal session requests and response JSON handling. The project does not currently depend on specialized Requests typing behavior.
+
+### Task 1 Results (2026-10-02)
+
+- `uv lock --upgrade-package requests --upgrade-package idna` updated only these locked packages: Requests `2.32.5` to `2.34.2`, and idna `3.11` to `3.20`. The resolver's current idna release is newer than the original `3.15` target; it remains within the same major version and addresses the audited finding.
+- No `pyproject.toml` constraint change was needed: the runtime Requests constraint already permits the resolved version, and idna is transitive.
+- The lockfile diff contains only the two selected packages.
+- `uv run pytest tests/test_client.py -v`: 30 passed. This exercises the normal client session request and JSON response handling against Requests `2.34.2`.
+- `uv run ruff check .`: passed.
+- `uv audit --locked --no-extra notebook --no-dev` reports no findings for Requests or idna. It exits non-zero because the separately planned `urllib3` update remains outstanding, with 10 advisory records for `urllib3 2.6.3`.
 
 Keep `urllib3` out of this batch so its proxy-related behavior change has a separate review and validation step.
 
