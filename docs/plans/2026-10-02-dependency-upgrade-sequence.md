@@ -48,11 +48,20 @@ Keep `urllib3` out of this batch so its proxy-related behavior change has a sepa
 
 **Package:** `urllib3` to `2.8.0`.
 
-- [ ] Update and lock `urllib3` independently of other dependency groups.
-- [ ] Inspect application and deployment configuration for HTTPS forwarding proxies or custom proxy TLS settings.
-- [ ] Run the client unit suite, focusing on session setup, GET/POST requests, and error handling.
-- [ ] If HTTPS proxies are supported in deployment, exercise a representative proxy configuration; otherwise document that this configuration is not used.
-- [ ] Run the focused runtime audit and confirm the `urllib3` findings are resolved.
+- [x] Update and lock `urllib3` independently of other dependency groups.
+- [x] Inspect repository application and deployment configuration for HTTPS forwarding proxies or custom proxy TLS settings.
+- [x] Run the client unit suite, focusing on session setup, GET/POST requests, and error handling.
+- [x] Check for repository-documented HTTPS proxy support; retain deployment proxy validation as a release caveat because deployment configuration is not available here.
+- [x] Run the focused runtime audit and confirm the `urllib3` findings are resolved.
+
+### Task 2 Results (2026-10-02)
+
+- `uv lock --upgrade-package urllib3` updated only `urllib3`, from `2.6.3` to `2.8.0`.
+- No explicit proxy or custom proxy-TLS configuration appears in the client, tests, examples, or repository documentation. The client uses `requests.Session()`, which may inherit proxy configuration from its runtime environment; no deployment environment was available to test.
+- `uv run pytest tests/test_client.py -v`: 30 passed, covering client session setup and mocked GET/POST behavior.
+- `uv run ruff check .`: passed.
+- `uv audit --locked --no-extra notebook --no-dev`: passed with no known vulnerabilities or adverse project statuses in the focused runtime dependency set.
+- Before release, validate HTTPS forwarding-proxy behavior if the deployment configures one, particularly any custom proxy TLS settings.
 
 ## Task 3: Optional Notebook Stack as a Cohort
 
