@@ -13,13 +13,12 @@
 | Low | `requests` | `2.34.2` | Latest patch/minor line target; exercise the client request and response paths. |
 | Low | `idna` | `3.20` | Fixes the reported denial-of-service advisory without a major-version change. |
 | Low | `pytest` | `9.0.3` | Fixes the reported advisory while staying on the existing 9.0 line; do not combine with a move to 9.1. |
-| Low | `setuptools` | `84.0.0` | Current release within the existing major version; it is only present through the optional notebook dependency graph. |
-| Low | `anyio` | `4.14.2` | Audit-identified patch-level security target; transitive/optional, with no corresponding Dependabot PR. |
+| Low | `anyio` | `4.14.2` on Python `<3.14`; `4.15.1` on Python `>=3.14` | Resolver-selected 4.x releases resolve the audited findings; transitive/optional, with no corresponding Dependabot PR. |
 | Medium | `urllib3` | `2.8.0` | Resolves current findings, but includes HTTPS forwarding-proxy TLS behavior changes. Verify configured proxy behavior where applicable. |
-| Medium | `mistune` | `3.3.0` | Addresses current findings in the optional notebook/parser graph; exercise notebook rendering/import paths. |
-| Medium | `soupsieve` | `2.9.0` | Covers the current audit findings, including newer ReDoS advisories; optional HTML/parser dependency. |
+| Medium | `mistune` | `3.3.4` | Current 3.x release addresses findings in the optional notebook/parser graph; exercise notebook rendering/import paths. |
+| Medium | `soupsieve` | `2.10` | Current 2.x release covers the current audit findings, including newer ReDoS advisories; optional HTML/parser dependency. |
 | Medium | Jupyter Server, Tornado, JupyterLab, Notebook | `2.21.1`, `6.5.10`, `4.6.4`, `7.6.3` | Security/maintenance updates are appropriate, but these packages form a coupled optional stack. Notebook `7.6.3` requires the JupyterLab 4.6 line; Tornado's static-file symlink behavior and Jupyter Server compatibility warrant a stack-level smoke test. |
-| Medium, residual risk | `bleach` | `6.4.0` | Fixes known fixable findings, but the project reports an unfixed advisory and Bleach is no longer maintained. Upgrade for the available fixes, record the residual finding, and track replacement/removal separately. |
+| Medium, lifecycle concern | `bleach` | `6.4.0` | Clears the current audit findings, but upstream identifies 6.4.0 as its final release with no future security fixes. Track replacement/removal separately. |
 
 Risk describes expected change/validation effort, not advisory severity. Prioritize security-relevant changes even when validation risk is medium.
 
@@ -87,14 +86,30 @@ Notebook `7.6.3` requires the JupyterLab 4.6 line, so the initially proposed Jup
 
 ## Task 4: Optional Parser and Development Dependencies
 
-**Packages:** `mistune` `3.3.0`, `soupsieve` `2.9.0`, `bleach` `6.4.0`, `pytest` `9.0.3`, `setuptools` `84.0.0`, `anyio` `4.14.2`.
+**Packages:** `mistune` `3.3.4`, `soupsieve` `2.10`, `bleach` `6.4.0`, `pytest` `9.0.3`, `anyio` `4.14.2` for Python `<3.14` and `4.15.1` for Python `>=3.14`.
 
-- [ ] Apply updates to the relevant optional/development dependency graph, keeping `pytest` on 9.0.x.
-- [ ] Review lockfile changes to confirm unrelated packages were not broadly refreshed.
-- [ ] Run the full test suite and lint checks.
-- [ ] Exercise notebook/parser imports or rendering if those paths are available in the repository's examples/tests.
-- [ ] Run the full locked audit and record the remaining Bleach advisory separately; do not treat the audit as fully clean while that advisory is present.
-- [ ] Create a separate follow-up to evaluate replacing/removing Bleach; do not expand this update batch into a parser migration.
+`setuptools` was removed from the resolved graph by the JupyterLab 4.6 update, so do not add it back solely to apply the previous `84.0.0` target.
+
+- [x] Apply updates to the relevant optional/development dependency graph, keeping `pytest` on 9.0.x.
+- [x] Review lockfile changes to confirm unrelated packages were not broadly refreshed.
+- [x] Run the full test suite and lint checks.
+- [x] Exercise notebook/parser imports or rendering if those paths are available in the repository's examples/tests.
+- [x] Run the full locked audit and record any remaining advisory.
+- [x] Record a separate follow-up to evaluate replacing/removing Bleach; do not expand this update batch into a parser migration.
+
+### Task 4 Results (2026-10-02)
+
+- Selective lock refresh updated Bleach `6.3.0` to `6.4.0`, Mistune `3.2.0` to `3.3.4`, SoupSieve `2.8.3` to `2.10`, pytest `9.0.2` to `9.0.3`, and AnyIO `4.13.0` to `4.14.2` for Python `<3.14`; the lock resolves AnyIO `4.15.1` for Python `>=3.14`.
+- Added the dev constraint `pytest>=9.0.3,<9.1` to stay on the 9.0 line as planned. `setuptools` is not present in the final resolved graph after the JupyterLab update and was not reintroduced.
+- `uv sync --locked --extra notebook` completed successfully.
+- `uv run --locked --extra notebook pytest`: 66 passed.
+- `uv run --locked --extra notebook ruff check .`: passed.
+- A parser smoke check passed for Mistune HTML rendering, Bleach sanitization, and SoupSieve selector matching.
+- `uv audit --locked`: passed with no known vulnerabilities or adverse project statuses in 115 packages. The earlier Bleach `6.3.0` no-fix advisory is no longer reported for `6.4.0`; upstream says `6.4.0` is the final release and no further security fixes will be published.
+
+### Separate Follow-Up: Bleach Lifecycle
+
+Evaluate removing/replacing Bleach and its `html5lib` dependency in a separate task. Keep this out of the dependency bump batch; there are no active findings in the current locked audit, but the library will receive no future security releases.
 
 ## Task 5: Final Audit and Report
 
