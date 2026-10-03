@@ -38,6 +38,7 @@ Documentation = "https://docs.wildme.org/"
 notebook = [
     "ipykernel>=6.31.0",
     "ipyleaflet>=0.20.0",
+    "jupyterlab>=4.5.11,<4.6",
     "notebook>=7.0.0",
     "python-dotenv>=1.0.0",
 ]
