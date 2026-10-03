@@ -18,7 +18,7 @@
 | Medium | `urllib3` | `2.8.0` | Resolves current findings, but includes HTTPS forwarding-proxy TLS behavior changes. Verify configured proxy behavior where applicable. |
 | Medium | `mistune` | `3.3.0` | Addresses current findings in the optional notebook/parser graph; exercise notebook rendering/import paths. |
 | Medium | `soupsieve` | `2.9.0` | Covers the current audit findings, including newer ReDoS advisories; optional HTML/parser dependency. |
-| Medium | Jupyter Server, Tornado, JupyterLab, Notebook | `2.21.1`, `6.5.10`, `4.5.11`, `7.6.3` | Security/maintenance updates are appropriate, but these packages form a coupled optional stack. Tornado's static-file symlink behavior and Jupyter Server compatibility warrant a stack-level smoke test. |
+| Medium | Jupyter Server, Tornado, JupyterLab, Notebook | `2.21.1`, `6.5.10`, `4.6.4`, `7.6.3` | Security/maintenance updates are appropriate, but these packages form a coupled optional stack. Notebook `7.6.3` requires the JupyterLab 4.6 line; Tornado's static-file symlink behavior and Jupyter Server compatibility warrant a stack-level smoke test. |
 | Medium, residual risk | `bleach` | `6.4.0` | Fixes known fixable findings, but the project reports an unfixed advisory and Bleach is no longer maintained. Upgrade for the available fixes, record the residual finding, and track replacement/removal separately. |
 
 Risk describes expected change/validation effort, not advisory severity. Prioritize security-relevant changes even when validation risk is medium.
@@ -65,16 +65,25 @@ Keep `urllib3` out of this batch so its proxy-related behavior change has a sepa
 
 ## Task 3: Optional Notebook Stack as a Cohort
 
-**Packages:** Jupyter Server `2.21.1`, Tornado `6.5.10`, JupyterLab `4.5.11`, Notebook `7.6.3`.
+**Packages:** Jupyter Server `2.21.1`, Tornado `6.5.10`, JupyterLab `4.6.4`, Notebook `7.6.3`.
 
-- [ ] Update the four packages together, preserving the current JupyterLab 4.5 line rather than broadening to a new minor line.
-- [ ] Resolve and review the lockfile as a cohort; do not manually pin transitive packages unless the resolver requires it.
-- [ ] Install/sync the notebook extra with the lockfile enforced.
-- [ ] Run core tests and a notebook-extra smoke check: import the notebook/Jupyter packages and start the relevant server command far enough to verify initialization.
-- [ ] Review any static-file serving behavior relied on by examples, particularly symlinks outside the served root.
-- [ ] Audit the notebook extra and record any advisory that remains.
+- [x] Update the four packages together. Use the JupyterLab 4.6 line because Notebook 7.6.3 does not resolve with JupyterLab 4.5.
+- [x] Resolve and review the lockfile as a cohort; accept only resolver-required transitive changes.
+- [x] Install/sync the notebook extra with the lockfile enforced.
+- [x] Run core tests and a notebook-extra smoke check: import the notebook/Jupyter packages and start the relevant server command far enough to verify initialization.
+- [x] Review any static-file serving behavior relied on by examples, particularly symlinks outside the served root.
+- [x] Audit the notebook extra and record any advisory that remains.
 
-The Jupyter Server target is `2.21.1` rather than the older Dependabot target because it includes the Tornado 6.5.9+ compatibility adjustment. Tornado's `6.5.10` target incorporates the current patch line while keeping the same minor series.
+Notebook `7.6.3` requires the JupyterLab 4.6 line, so the initially proposed JupyterLab `4.5.11` target could not be used with it. The user chose JupyterLab `4.6.4` to take the Notebook security fix. Jupyter Server `2.21.1` includes the Tornado 6.5.9+ compatibility adjustment; Tornado `6.5.10` stays on the same minor series.
+
+### Task 3 Results (2026-10-02)
+
+- `uv lock --upgrade-package jupyter-server --upgrade-package tornado --upgrade-package jupyterlab --upgrade-package notebook` resolved Jupyter Server `2.21.1`, Tornado `6.5.10`, JupyterLab `4.6.4`, and Notebook `7.6.3`. The resolver also added `jupyter-builder 1.2.3`, required by the JupyterLab 4.6 dependency graph.
+- `uv sync --locked --extra notebook` completed successfully.
+- `uv run --locked --extra notebook pytest`: 66 passed.
+- A local Jupyter Server startup smoke check loaded the `jupyterlab`, `notebook`, Jupyter LSP, terminal, and notebook shim extensions, then shut down cleanly. The server was bound to `127.0.0.1` for the check.
+- The examples and README contain no symlinks or custom static-file serving references.
+- `uv audit --locked --no-dev` reports no findings for Jupyter Server, Tornado, JupyterLab, or Notebook. It reports 47 advisory records remaining in `anyio`, `bleach`, `mistune`, and `soupsieve`; those are tracked under Task 4, and Bleach has one advisory with no known fix.
 
 ## Task 4: Optional Parser and Development Dependencies
 
