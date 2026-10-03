@@ -113,10 +113,22 @@ Evaluate removing/replacing Bleach and its `html5lib` dependency in a separate t
 
 ## Task 5: Final Audit and Report
 
-- [ ] Run the project's full test suite and lint checks after all approved batches.
-- [ ] Run the runtime-focused and full locked audits; distinguish runtime findings from optional notebook/development findings.
-- [ ] Confirm the lockfile is reproducible with locked sync and inspect the complete dependency diff.
-- [ ] Record any unresolved advisory, its affected install paths, and the planned disposition.
+- [x] Run the project's full test suite and lint checks after all approved batches.
+- [x] Run the runtime-focused and full locked audits; distinguish runtime findings from optional notebook/development findings.
+- [x] Confirm the lockfile is reproducible with locked sync and inspect the complete dependency diff.
+- [x] Record remaining risks, affected install paths, and planned dispositions.
+
+### Task 5 Results (2026-10-02)
+
+- `uv lock --check`: passed; resolved 116 packages without changing the lock.
+- `uv sync --locked --extra notebook`: passed; checked all 111 installed packages against the lock.
+- `uv run --locked --extra notebook pytest`: 66 passed.
+- `uv run --locked --extra notebook ruff check .`: passed.
+- `uv audit --locked --no-extra notebook --no-dev`: no known vulnerabilities or adverse project statuses in the five-package runtime set.
+- `uv audit --locked`: no known vulnerabilities or adverse project statuses in 115 packages across the full lock.
+- Reviewed `git diff bd9b134..HEAD`: dependency changes are limited to the planned package updates, the pytest 9.0 constraint, JupyterLab's resolver-required `jupyter-builder`, and marker/typing-extension lock entries for supported Python versions. `git diff --check bd9b134..HEAD` passed.
+- No active audit findings remain. Bleach's lack of future security releases remains a maintenance lifecycle concern; its replacement/removal evaluation is tracked separately above.
+- Deployment-specific caveat: validate `urllib3 2.8.0` HTTPS forwarding-proxy behavior before release if a deployment uses a proxy or custom proxy TLS settings. The repository contains no explicit proxy configuration, and no deployment environment was available for this check.
 
 ## Separate Documentation Follow-Up
 
